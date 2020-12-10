@@ -847,13 +847,6 @@ int main(int argc, const char **argv) {
     char run_work_dir[BUFFER_SIZE];
     int p_id, time_lmt, mem_lmt, lang, isspj, max_case_time = 0;
 
-    /* 0. 判断命令行参数个数是否正确 */
-    if (argc < 3) {
-        printf("VERSION: %s\n", get_version());
-        fprintf(stderr, "Usage: %s ${base_path} ${solution_id}\n", argv[0]);
-        exit(1);
-    }
-
     if (
             argv_exist_switch(argc, argv, "--version")
             || argv_exist_switch(argc, argv, "-version")
@@ -862,6 +855,13 @@ int main(int argc, const char **argv) {
             ) {
         printf("VERSION: %s\n", get_version());
         return EXIT_SUCCESS;
+    }
+
+    /* 0. 判断命令行参数个数是否正确 */
+    if (argc < 3) {
+        printf("VERSION: %s\n", get_version());
+        fprintf(stderr, "Usage: %s ${base_path} ${solution_id}\n", argv[0]);
+        exit(1);
     }
 
     /* 1. 读取命令行参数 */
