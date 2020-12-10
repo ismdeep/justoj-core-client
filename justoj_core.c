@@ -197,6 +197,7 @@ int main(int argc, const char *argv[]) {
     /* Set base path (oj_home) */
     strcpy(base_path, argv[1]);
     chdir(base_path);
+    sprintf(lock_file, "%s/lock.pid", base_path);
 
     char log_file_path[1024];
     sprintf(log_file_path, "%s/product.log", base_path);
@@ -224,7 +225,6 @@ int main(int argc, const char *argv[]) {
     log_info("VERSION: %s", get_version());
     log_info("JustOJ Core Started");
     log_info("OJ_HOME: [%s]", base_path);
-    sprintf(lock_file, "%s/lock.pid", base_path);
     log_info("Lock PID File: [%s]", lock_file);
 
     /* Read judge.conf */
