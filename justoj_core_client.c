@@ -853,7 +853,7 @@ int main(int argc, const char **argv) {
             || argv_exist_switch(argc, argv, "-v")
             || argv_exist_switch(argc, argv, "-V")
             ) {
-        printf("VERSION: %s\n", get_version());
+        printf("justoj-core-client version: %s\n", get_version());
         return EXIT_SUCCESS;
     }
 
