@@ -201,16 +201,6 @@ int main(int argc, const char *argv[]) {
     char log_file_path[1024];
     sprintf(log_file_path, "%s/product.log", base_path);
 
-    FILE *log_file = fopen(log_file_path, "ab");
-    log_add_fp(log_file, LOG_INFO);
-    log_set_quiet(false);
-
-    log_info("VERSION: %s", get_version());
-    log_info("JustOJ Core Started");
-    log_info("OJ_HOME: [%s]", base_path);
-    sprintf(lock_file, "%s/lock.pid", base_path);
-    log_info("Lock PID File: [%s]", lock_file);
-
     /* Determine if it is running under daemon mode. */
     bool daemon_flag = false;
     if (argv_exist_switch(argc, argv, "-d")) {
@@ -222,9 +212,20 @@ int main(int argc, const char *argv[]) {
 
     /* Judge if it is already running */
     if (already_running()) {
-        log_warn("This daemon program is already running!");
+        log_info("VERSION: %s", get_version());
+        log_warn("This daemon program [justoj-core] is already running!");
         return 1;
     }
+
+    FILE *log_file = fopen(log_file_path, "ab");
+    log_add_fp(log_file, LOG_INFO);
+    log_set_quiet(true);
+
+    log_info("VERSION: %s", get_version());
+    log_info("JustOJ Core Started");
+    log_info("OJ_HOME: [%s]", base_path);
+    sprintf(lock_file, "%s/lock.pid", base_path);
+    log_info("Lock PID File: [%s]", lock_file);
 
     /* Read judge.conf */
     init_judge_conf();
