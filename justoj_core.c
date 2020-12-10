@@ -222,7 +222,7 @@ int main(int argc, const char *argv[]) {
 
     /* Judge if it is already running */
     if (already_running()) {
-        log_info("This daemon program is already running!");
+        log_warn("This daemon program is already running!");
         return 1;
     }
 
