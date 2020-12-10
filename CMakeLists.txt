@@ -55,7 +55,7 @@ add_executable(justoj-core        justoj_core.c)
 add_executable(justoj-core-client justoj_core_client.c)
 
 if (NOT CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX /usr/local/bin)
+    set(CMAKE_INSTALL_PREFIX /usr/bin)
 endif()
 
 install(TARGETS justoj-core DESTINATION .)
