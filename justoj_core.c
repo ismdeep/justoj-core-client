@@ -22,6 +22,8 @@
 
 #include <log.h>
 
+#include <version.h>
+
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 #define STD_MB 1048576
 
@@ -203,8 +205,8 @@ int main(int argc, const char *argv[]) {
     log_add_fp(log_file, LOG_INFO);
     log_set_quiet(false);
 
+    log_info("VERSION: %s", get_version());
     log_info("JustOJ Core Started");
-
     log_info("OJ_HOME: [%s]", base_path);
     sprintf(lock_file, "%s/lock.pid", base_path);
     log_info("Lock PID File: [%s]", lock_file);

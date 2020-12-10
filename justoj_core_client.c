@@ -845,7 +845,7 @@ int main(int argc, const char **argv) {
 
     /* 0. 判断命令行参数个数是否正确 */
     if (argc < 3) {
-        fprintf(stderr, "Usage:%s ${base_path} ${solution_id}\n", argv[0]);
+        fprintf(stderr, "Usage: %s ${base_path} ${solution_id}\n", argv[0]);
         exit(1);
     }
 
