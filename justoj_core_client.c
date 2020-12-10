@@ -17,6 +17,10 @@
 #include <utils.h>
 #include <judge_http_api.h>
 
+
+#include <ismdeep-c-utils/argv.h>
+#include <version.h>
+
 #include <defines.h>
 
 #include <log.h>
@@ -845,8 +849,19 @@ int main(int argc, const char **argv) {
 
     /* 0. 判断命令行参数个数是否正确 */
     if (argc < 3) {
+        printf("VERSION: %s\n", get_version());
         fprintf(stderr, "Usage: %s ${base_path} ${solution_id}\n", argv[0]);
         exit(1);
+    }
+
+    if (
+            argv_exist_switch(argc, argv, "--version")
+            || argv_exist_switch(argc, argv, "-version")
+            || argv_exist_switch(argc, argv, "-v")
+            || argv_exist_switch(argc, argv, "-V")
+            ) {
+        printf("VERSION: %s\n", get_version());
+        return EXIT_SUCCESS;
     }
 
     /* 1. 读取命令行参数 */

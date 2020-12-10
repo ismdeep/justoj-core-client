@@ -190,8 +190,19 @@ int daemon_init(void) {
  */
 int main(int argc, const char *argv[]) {
     if (argc < 2) {
+        printf("VERSION: %s\n", get_version());
         printf("Usage: %s ${base_path}", argv[0]);
         return -1;
+    }
+
+    if (
+            argv_exist_switch(argc, argv, "--version")
+            || argv_exist_switch(argc, argv, "-version")
+            || argv_exist_switch(argc, argv, "-v")
+            || argv_exist_switch(argc, argv, "-V")
+            ) {
+        printf("VERSION: %s\n", get_version());
+        return EXIT_SUCCESS;
     }
 
     /* Set base path (oj_home) */
