@@ -54,9 +54,11 @@ include_directories("./vendor/log.h/src")
 add_executable(justoj-core        justoj_core.c)
 add_executable(justoj-core-client justoj_core_client.c)
 
-if (NOT CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX /usr/bin)
+if (NOT JUSTOJ_INSTALL_DIST)
+    set(JUSTOJ_INSTALL_DIST /usr/bin)
 endif()
+
+set(CMAKE_INSTALL_PREFIX JUSTOJ_INSTALL_DIST)
 
 install(TARGETS justoj-core DESTINATION .)
 install(TARGETS justoj-core-client DESTINATION .)
