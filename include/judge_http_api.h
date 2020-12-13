@@ -10,6 +10,8 @@
 #include <oj_result_text.h>
 #include <log.h>
 
+#include <wget_utils.h>
+
 static char lang_ext[20][8] = {"c", "cc", "pas", "java", "rb", "sh", "py",
                                "php", "pl", "cs", "m", "bas", "scm", "c", "cc", "lua", "js", "go", "py",
                                "cl"};
@@ -17,7 +19,7 @@ static char lang_ext[20][8] = {"c", "cc", "pas", "java", "rb", "sh", "py",
 bool judge_http_api_check_secure_code(const char *http_base_url, const char *secure_code) {
     const char *cmd =
             "wget -t 3 --post-data=\"secure_code=%s\" -q -O - \"%s/api/judge_api/check_secure_code?_=%s\"";
-    char* current_time_id_str = current_time_id();
+    char *current_time_id_str = current_time_id();
     FILE *fjobs = read_cmd_output(cmd, secure_code, http_base_url, current_time_id_str);
     free(current_time_id_str);
     char ret[1024];
@@ -25,33 +27,55 @@ bool judge_http_api_check_secure_code(const char *http_base_url, const char *sec
     return (strcmp("1", ret) == 0);
 }
 
-int judge_http_api_get_jobs(const char *http_base_url, const char *secure_code, const char *oj_lang_set, int query_size,
-                            int *jobs) {
-    char buf[BUFFER_SIZE];
-    const char *cmd = "wget --post-data=\"secure_code=%s&oj_lang_set=%s&query_size=%d\" -q -O - \"%s/api/judge_api/get_pending?_=%s\"";
-    char* current_time_id_str = current_time_id();
-    FILE *fjobs = read_cmd_output(cmd, secure_code, oj_lang_set, query_size, http_base_url, current_time_id_str);
+size_t judge_http_api_get_jobs(
+        const char *http_base_url,
+        const char *secure_code,
+        const char *oj_lang_set,
+        size_t query_size,
+        size_t *solution_ids) {
+    char *url = (char *) malloc(sizeof(char) * 1024);
+    char *post_data = (char *) malloc(sizeof(char) * 4096);
+    memset(url, 0, sizeof(char) * 1024);
+    memset(post_data, 0, sizeof(char) * 4096);
+
+    char *current_time_id_str = current_time_id();
+    sprintf(url, "%s/api/judge_api/get_pending?_=%s", http_base_url, current_time_id_str);
+    sprintf(post_data, "secure_code=%s&oj_lang_set=%s&query_size=%zu", secure_code, oj_lang_set, query_size);
     free(current_time_id_str);
-    fscanf(fjobs, "%s", buf);
+
+    FILE *fp = wget_post_fp(url, post_data);
+    free(url);
+    free(post_data);
+
+    char *buf = (char *) malloc(sizeof(char) * 1024);
+
+    fscanf(fp, "%s", buf);
     if (strcmp(buf, "solution_ids") != 0) {
-        pclose(fjobs);
+        pclose(fp);
+        free(buf);
         return 0;
     }
-    int jobs_cnt = 0;
-    while (fscanf(fjobs, "%s", buf) != EOF) {
-        int sid = atoi(buf);
-        if (sid > 1000)
-            jobs[jobs_cnt++] = sid;
+
+    size_t jobs_cnt = 0;
+    for (size_t i = 0; i < query_size; i++) {
+        solution_ids[i] = 0;
     }
-    pclose(fjobs);
+    while (fscanf(fp, "%s", buf) != EOF) {
+        size_t solution_id = strtol(buf, NULL, 10);
+        if (solution_id > 1000)
+            solution_ids[jobs_cnt++] = solution_id;
+    }
+    free(buf);
+    pclose(fp);
     return jobs_cnt;
 }
 
-bool judge_http_api_set_solution_result(const char *http_base_url, const char *secure_code, int solution_id, int result) {
+bool
+judge_http_api_set_solution_result(const char *http_base_url, const char *secure_code, int solution_id, int result) {
     const char *cmd = "wget --post-data=\"secure_code=%s&sid=%d&result=%d\" -q -O - \"%s/api/judge_api/checkout?_=%s\"";
     char ret_str[1024] = "";
     while (1) {
-        char* current_time_id_str = current_time_id();
+        char *current_time_id_str = current_time_id();
         FILE *fjobs = read_cmd_output(cmd, secure_code, solution_id, result, http_base_url, current_time_id_str);
         free(current_time_id_str);
         fscanf(fjobs, "%s", ret_str);
@@ -103,7 +127,7 @@ void judge_http_api_add_ce_info_http(const char *http_base_url, const char *secu
     free(ceinfo_encode);
     char ret_str[1024] = "";
     const char *cmd = "wget --post-file=\"ce.post\" -q -O - \"%s/api/judge_api/add_ce_info?_=%s\"";
-    char* current_time_id_str = current_time_id();
+    char *current_time_id_str = current_time_id();
     FILE *fjobs = read_cmd_output(cmd, http_base_url, current_time_id_str);
     free(current_time_id_str);
     fscanf(fjobs, "%s", ret_str);
@@ -117,7 +141,7 @@ void judge_http_api_get_solution(const char *http_base_url, const char *secure_c
     // create the src file
     sprintf(src_pth, "Main.%s", lang_ext[lang]);
 
-    const char *cmd2 ="wget --post-data=\"secure_code=%s&sid=%d\" -q -O %s \"%s/api/judge_api/get_solution?_=%s\"";
+    const char *cmd2 = "wget --post-data=\"secure_code=%s&sid=%d\" -q -O %s \"%s/api/judge_api/get_solution?_=%s\"";
     char *current_time_id_str = current_time_id();
     FILE *pout = read_cmd_output(cmd2, secure_code, solution_id, src_pth, http_base_url, current_time_id_str);
     free(current_time_id_str);

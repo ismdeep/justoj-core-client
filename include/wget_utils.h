@@ -9,8 +9,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-char *wget_cmd(char *cmd) {
+FILE *wget_cmd_fp(char *cmd) {
     FILE *fp = popen(cmd, "r");
+    return fp;
+}
+
+
+char *wget_cmd(char *cmd) {
+    FILE *fp = wget_cmd_fp(cmd);
     fseek(fp, 0, SEEK_END);
     size_t size = ftell(fp);
     char *content = (char *) malloc(sizeof(char) * (size + 1));
@@ -22,12 +28,27 @@ char *wget_cmd(char *cmd) {
     return content;
 }
 
+FILE *wget_get_fp(char *url) {
+    char *cmd = (char *) malloc(sizeof(char) * (strlen(url) + 255));
+    sprintf(cmd, "wget -t 3 -q -O - \"%s\"", url);
+    FILE *fp = wget_cmd_fp(cmd);
+    return fp;
+}
+
 char *wget_get(char *url) {
     char *cmd = (char *) malloc(sizeof(char) * (strlen(url) + 255));
     sprintf(cmd, "wget -t 3 -q -O - \"%s\"", url);
     char *content = wget_cmd(cmd);
     free(cmd);
     return content;
+}
+
+
+FILE *wget_post_fp(char *url, char *post_data) {
+    char *cmd = (char *) malloc(sizeof(char) * (strlen(url) + strlen(post_data) + 255));
+    sprintf(cmd, "wget -t 3 --post-data=\"%s\" -q -O - \"%s\"", post_data, url);
+    FILE *fp = wget_cmd_fp(cmd);
+    return fp;
 }
 
 char *wget_post(char *url, char *post_data) {

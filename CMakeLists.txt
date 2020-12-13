@@ -30,10 +30,16 @@ if(GIT_FOUND)
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 endif()
+
+if("${BRANCH_NAME}" STREQUAL "")
+    set(BRANCH_NAME "main")
+    set(RELEASE_DATE "0")
+    set(COMMIT_HASH "xxxx")
+endif()
+
 message(STATUS "Git version is ${BRANCH_NAME}:${RELEASE_DATE}:${COMMIT_HASH}")
 
 set(CMAKE_C_STANDARD 11)
-
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
