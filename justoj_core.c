@@ -17,29 +17,36 @@
 #include <judge_http_api.h>
 
 #include <ismdeep-c-utils/threadpool.h>
-#include <ismdeep-c-utils/string.h>
 #include <ismdeep-c-utils/argv.h>
 
 #include <log.h>
 
 #include <version.h>
 
+#include <solution_queue.h>
+
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 #define STD_MB 1048576
 
 #define TIMES(id, size) for(int id = 0; id < (size); ++id)
+
+
 
 static char lock_file[BUFFER_SIZE];
 static char secure_code[BUFFER_SIZE];
 static char base_path[BUFFER_SIZE];
 static char client_name[BUFFER_SIZE];
 static char oj_lang_set[BUFFER_SIZE];
-static int max_running;
-static int query_size;
+static size_t max_running;
+static size_t query_size;
 static int sleep_time;
 static char http_base_url[BUFFER_SIZE];
 
 static bool STOP = false;
+
+
+struct SolutionQueue *queue;
+pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void call_for_exit() {
     STOP = true;
@@ -64,8 +71,8 @@ void init_judge_conf() {
     fp = fopen(config_file_path, "r");
     if (fp != NULL) {
         while (fgets(buf, BUFFER_SIZE - 1, fp)) {
-            read_int(buf, "OJ_RUNNING", &max_running);
-            read_int(buf, "OJ_QUERY_SIZE", &query_size);
+            read_size_t(buf, "OJ_RUNNING", &max_running);
+            read_size_t(buf, "OJ_QUERY_SIZE", &query_size);
             read_int(buf, "OJ_SLEEP_TIME", &sleep_time);
             read_buf(buf, "OJ_CLIENT_NAME", client_name);
             read_buf(buf, "OJ_SECURE_CODE", secure_code);
@@ -77,7 +84,7 @@ void init_judge_conf() {
     }
 }
 
-void run_client(char *solution_id_str) {
+void run_client(size_t solution_id) {
     struct rlimit LIM;
     LIM.rlim_max = 800;
     LIM.rlim_cur = 800;
@@ -93,35 +100,93 @@ void run_client(char *solution_id_str) {
 
     LIM.rlim_cur = LIM.rlim_max = 200;
     setrlimit(RLIMIT_NPROC, &LIM);
-    execute_cmd("justoj-core-client %s %s", base_path, solution_id_str);
-    free(solution_id_str);
+    execute_cmd("justoj-core-client %s %zu", base_path, solution_id);
 }
 
-void *run_client_thread_func(void *arg) {
-    char *solution_id_str = (char *) arg;
-    run_client(solution_id_str);
-    return NULL;
-}
 
-void work() {
-    int solution_ids[query_size];
-    TIMES(i, query_size) {
-        solution_ids[i] = 0;
-    }
-    /* get the database info */
-    if (0 == judge_http_api_get_jobs(http_base_url, secure_code, oj_lang_set, query_size, solution_ids)) {
-        return;
-    }
+void fetch_solution_ids() {
+    size_t *solution_ids = (size_t *) malloc(sizeof(size_t) * query_size);
 
-    struct ThreadPool *pool = threadpool_init(max_running, query_size);
+    while (true) {
+        if (queue->size >= query_size) {
+            if (STOP) {
+                break;
+            }
 
-    TIMES(i, query_size) {
-        if (solution_ids[i] >= 1000) {
-            threadpool_add_job(pool, run_client_thread_func, int_to_string(solution_ids[i]));
+            SLEEP_MS(100);
+            continue;;
+        }
+
+        /* get the database info */
+        size_t ret = judge_http_api_get_jobs(http_base_url, secure_code, oj_lang_set, query_size, solution_ids);
+        if (0 == ret) {
+            if (STOP) {
+                break;
+            }
+            continue;
+        }
+
+        for (size_t i = 0; i < query_size; i++) {
+            if (solution_ids[i] >= 1000) {
+                pthread_mutex_lock(&queue_mutex);
+                solution_queue_push(queue, solution_ids[i]);
+                pthread_mutex_unlock(&queue_mutex);
+            }
         }
     }
 
-    threadpool_destroy(pool);
+    log_info("%p => fetch_solution_ids() STOPPED.", pthread_self());
+}
+
+
+void working_solution() {
+    size_t solution_id;
+    while (true) {
+        pthread_mutex_lock(&queue_mutex);
+        solution_id = solution_queue_pop(queue);
+        pthread_mutex_unlock(&queue_mutex);
+        if (solution_id < 1000) {
+            if (STOP) {
+                break;
+            }
+            SLEEP_MS(100);
+            continue;
+        }
+
+        run_client( solution_id );
+    }
+
+    log_info("%p => working_solution() STOPPED.", pthread_self());
+}
+
+
+void work() {
+
+    log_info("query_size : %zu", query_size);
+    log_info("max_running: %zu", max_running);
+
+    /* 初始化队列 */
+    queue = solution_queue_create(query_size * 4);
+
+    /* 启动生产者线程 */
+    pthread_t *fetch_thread = (pthread_t *) malloc(sizeof(pthread_t) * 1);
+    pthread_create(fetch_thread, NULL, (void *(*)(void *)) fetch_solution_ids, NULL);
+
+    /* 启动消费者线程们 */
+    pthread_t *working_threads = (pthread_t *) malloc(sizeof(pthread_t) * max_running);
+    for (size_t i = 0; i < max_running; i++) {
+        pthread_create(&working_threads[i], NULL, (void *(*)(void *)) working_solution, NULL);
+    }
+
+    pthread_join(*fetch_thread, NULL);
+    for (size_t i = 0; i < max_running; i++) {
+        pthread_join(working_threads[i], NULL);
+    }
+
+    free(fetch_thread);
+    free(working_threads);
+    solution_queue_destroy(queue);
+    queue = NULL;
 }
 
 int lockfile(int fd) {
@@ -231,7 +296,7 @@ int main(int argc, const char *argv[]) {
 
     FILE *log_file = fopen(log_file_path, "ab");
     log_add_fp(log_file, LOG_INFO);
-    log_set_quiet(true);
+//    log_set_quiet(true);
 
     log_info("VERSION: %s", get_version());
     log_info("JustOJ Core Started");
@@ -257,10 +322,7 @@ int main(int argc, const char *argv[]) {
 
     log_info("Start to working... ");
 
-    while (!STOP) {
-        work();
-        sleep(sleep_time);
-    }
+    work();
 
     log_info("JustOJ Core STOPPED");
     return 0;

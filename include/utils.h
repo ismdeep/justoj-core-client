@@ -104,6 +104,13 @@ void read_double(char *buf, const char *key, double *value) {
 }
 
 
+void read_size_t(char *buf, const char *key, size_t *value) {
+    char buf2[BUFFER_SIZE];
+    if (read_buf(buf, key, buf2))
+        sscanf(buf2, "%zd", value);
+}
+
+
 void read_int(char *buf, const char *key, int *value) {
     char buf2[BUFFER_SIZE];
     if (read_buf(buf, key, buf2))
