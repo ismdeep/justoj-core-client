@@ -291,7 +291,7 @@ int main(int argc, const char *argv[]) {
 
     FILE *log_file = fopen(log_file_path, "ab");
     log_add_fp(log_file, LOG_INFO);
-//    log_set_quiet(true);
+    log_set_quiet(true);
 
 
     /* Read judge.conf */
