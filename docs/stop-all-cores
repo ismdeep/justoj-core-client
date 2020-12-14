@@ -2,5 +2,5 @@
 pids=`ps -e | grep justoj-core | grep -v justoj-core- | awk '{print $1}'`
 for pid in $pids
 do
-  kill -USR1 $pid
+  sudo kill -USR1 $pid
 done
