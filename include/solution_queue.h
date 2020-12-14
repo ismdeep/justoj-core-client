@@ -15,7 +15,7 @@
 struct SolutionQueue {
     size_t             max_size;
     size_t             size;
-    size_t             *solution_ids;
+    int                *solution_ids;
     size_t             push_cursor;
     size_t             pop_cursor;
     pthread_mutex_t    *mutex;
@@ -25,7 +25,7 @@ struct SolutionQueue *solution_queue_create(size_t max_size) {
     struct SolutionQueue *queue = (struct SolutionQueue *) malloc(sizeof(struct SolutionQueue) * 1);
     queue->max_size = max_size;
     queue->size = 0;
-    queue->solution_ids = (size_t *) malloc(sizeof(size_t) * max_size);
+    queue->solution_ids = (int *) malloc(sizeof(int) * max_size);
     queue->push_cursor = 0;
     queue->pop_cursor  = 0;
     queue->mutex = NULL;
@@ -37,7 +37,7 @@ void solution_queue_destroy(struct SolutionQueue *queue) {
     free(queue);
 }
 
-bool solution_queue_push(struct SolutionQueue *queue, size_t solution_id) {
+bool solution_queue_push(struct SolutionQueue *queue, int solution_id) {
     size_t index;
     bool flag = false;
 
@@ -61,8 +61,8 @@ bool solution_queue_push(struct SolutionQueue *queue, size_t solution_id) {
     return flag;
 }
 
-size_t solution_queue_pop(struct SolutionQueue *queue) {
-    size_t solution_id = 0;
+int solution_queue_pop(struct SolutionQueue *queue) {
+    int solution_id = 0;
     size_t index;
 
     /* mutex lock */

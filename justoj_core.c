@@ -79,7 +79,7 @@ void init_judge_conf() {
     }
 }
 
-void run_client(size_t solution_id) {
+void run_client(int solution_id) {
     struct rlimit LIM;
     LIM.rlim_max = 800;
     LIM.rlim_cur = 800;
@@ -95,12 +95,12 @@ void run_client(size_t solution_id) {
 
     LIM.rlim_cur = LIM.rlim_max = 200;
     setrlimit(RLIMIT_NPROC, &LIM);
-    execute_cmd("justoj-core-client %s %zu", base_path, solution_id);
+    execute_cmd("justoj-core-client %s %d", base_path, solution_id);
 }
 
 
 void fetch_solution_ids() {
-    size_t *solution_ids = (size_t *) malloc(sizeof(size_t) * query_size);
+    int *solution_ids = (size_t *) malloc(sizeof(int) * query_size);
 
     while (true) {
         if (queue->size >= query_size) {
@@ -135,7 +135,7 @@ void fetch_solution_ids() {
 
 
 void working_solution() {
-    size_t solution_id;
+    int solution_id;
     while (true) {
         solution_id = solution_queue_pop(queue);
         if (solution_id < 1000) {
