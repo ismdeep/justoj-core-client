@@ -37,8 +37,8 @@ static char secure_code[BUFFER_SIZE];
 static char base_path[BUFFER_SIZE];
 static char client_name[BUFFER_SIZE];
 static char oj_lang_set[BUFFER_SIZE];
-static size_t max_running;
-static size_t query_size;
+static int max_running;
+static int query_size;
 static int sleep_time;
 static char http_base_url[BUFFER_SIZE];
 
@@ -66,8 +66,8 @@ void init_judge_conf() {
     fp = fopen(config_file_path, "r");
     if (fp != NULL) {
         while (fgets(buf, BUFFER_SIZE - 1, fp)) {
-            read_size_t(buf, "OJ_RUNNING", &max_running);
-            read_size_t(buf, "OJ_QUERY_SIZE", &query_size);
+            read_int(buf, "OJ_RUNNING", &max_running);
+            read_int(buf, "OJ_QUERY_SIZE", &query_size);
             read_int(buf, "OJ_SLEEP_TIME", &sleep_time);
             read_buf(buf, "OJ_CLIENT_NAME", client_name);
             read_buf(buf, "OJ_SECURE_CODE", secure_code);
@@ -96,6 +96,7 @@ void run_client(int solution_id) {
     LIM.rlim_cur = LIM.rlim_max = 200;
     setrlimit(RLIMIT_NPROC, &LIM);
     execute_cmd("justoj-core-client %s %d", base_path, solution_id);
+    log_info("%d DONE", solution_id);
 }
 
 
@@ -113,7 +114,7 @@ void fetch_solution_ids() {
         }
 
         /* get the database info */
-        size_t ret = judge_http_api_get_jobs(http_base_url, secure_code, oj_lang_set, query_size, solution_ids);
+        int ret = judge_http_api_get_solutions(http_base_url, secure_code, oj_lang_set, query_size, solution_ids);
         if (0 == ret) {
             if (STOP) {
                 break;
@@ -121,11 +122,12 @@ void fetch_solution_ids() {
             continue;
         }
 
-        for (size_t i = 0; i < query_size; i++) {
+        for (int i = 0; i < query_size; i++) {
             if (solution_ids[i] >= 1000) {
                 while (!solution_queue_push(queue, solution_ids[i])) {
                     SLEEP_MS(100);
                 }
+                log_info("%d ADDED", solution_ids[i]);
             }
         }
     }
@@ -154,8 +156,8 @@ void working_solution() {
 
 
 void work() {
-    log_info("query_size : %zu", query_size);
-    log_info("max_running: %zu", max_running);
+    log_info("query_size : %d", query_size);
+    log_info("max_running: %d", max_running);
 
     /* 初始化队列 */
     queue = solution_queue_create(query_size * 4);
@@ -167,13 +169,13 @@ void work() {
 
     /* 启动消费者线程们 */
     pthread_t *working_threads = (pthread_t *) malloc(sizeof(pthread_t) * max_running);
-    for (size_t i = 0; i < max_running; i++) {
+    for (int i = 0; i < max_running; i++) {
         pthread_create(&working_threads[i], NULL, (void *(*)(void *)) working_solution, NULL);
     }
 
     /* 阻塞进程 */
     pthread_join(*fetch_thread, NULL);
-    for (size_t i = 0; i < max_running; i++) {
+    for (int i = 0; i < max_running; i++) {
         pthread_join(working_threads[i], NULL);
     }
 
@@ -287,7 +289,7 @@ int main(int argc, const char *argv[]) {
 
     FILE *log_file = fopen(log_file_path, "ab");
     log_add_fp(log_file, LOG_INFO);
-//    log_set_quiet(true);
+    log_set_quiet(true);
 
 
     /* Read judge.conf */
@@ -297,8 +299,6 @@ int main(int argc, const char *argv[]) {
     log_info("URL_BASE     : %s", http_base_url);
     log_info("OJ_HOME      : %s", base_path);
 
-
-    log_info("Check secure code");
     if (!judge_http_api_check_secure_code(http_base_url, secure_code)) {
         log_info("ERROR: Secure code is invalid.");
         log_info("JustOJ Core STOPPED");
