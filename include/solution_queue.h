@@ -26,6 +26,9 @@ struct SolutionQueue *solution_queue_create(int max_size) {
     queue->max_size = max_size;
     queue->size = 0;
     queue->solution_ids = (int *) malloc(sizeof(int) * max_size);
+    for (int i = 0; i < max_size; i++) {
+        queue->solution_ids[i] = 0;
+    }
     queue->push_cursor = 0;
     queue->pop_cursor  = 0;
     queue->mutex = NULL;
