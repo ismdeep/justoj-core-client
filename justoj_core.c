@@ -100,7 +100,7 @@ void run_client(int solution_id) {
 
 
 void fetch_solution_ids() {
-    int *solution_ids = (size_t *) malloc(sizeof(int) * query_size);
+    int *solution_ids = (int *) malloc(sizeof(int) * query_size);
 
     while (true) {
         if (queue->size >= query_size) {
