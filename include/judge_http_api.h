@@ -32,7 +32,7 @@ size_t judge_http_api_get_jobs(
         const char *secure_code,
         const char *oj_lang_set,
         size_t query_size,
-        size_t *solution_ids) {
+        int *solution_ids) {
     char *url = (char *) malloc(sizeof(char) * 1024);
     char *post_data = (char *) malloc(sizeof(char) * 4096);
     memset(url, 0, sizeof(char) * 1024);
@@ -61,7 +61,7 @@ size_t judge_http_api_get_jobs(
         solution_ids[i] = 0;
     }
     while (fscanf(fp, "%s", buf) != EOF) {
-        size_t solution_id = strtol(buf, NULL, 10);
+        int solution_id = strtol(buf, NULL, 10);
         if (solution_id > 1000)
             solution_ids[jobs_cnt++] = solution_id;
     }
