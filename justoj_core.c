@@ -44,17 +44,12 @@ static char http_base_url[BUFFER_SIZE];
 
 static bool STOP = false;
 
-
 struct SolutionQueue *queue;
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void call_for_exit() {
     STOP = true;
     log_info("Stopping judged...");
-}
-
-void call_for_status() {
-    log_info("Running");
 }
 
 /* Init variables from config file */
@@ -128,9 +123,9 @@ void fetch_solution_ids() {
 
         for (size_t i = 0; i < query_size; i++) {
             if (solution_ids[i] >= 1000) {
-                pthread_mutex_lock(&queue_mutex);
-                solution_queue_push(queue, solution_ids[i]);
-                pthread_mutex_unlock(&queue_mutex);
+                while (!solution_queue_push(queue, solution_ids[i])) {
+                    SLEEP_MS(100);
+                }
             }
         }
     }
@@ -142,9 +137,7 @@ void fetch_solution_ids() {
 void working_solution() {
     size_t solution_id;
     while (true) {
-        pthread_mutex_lock(&queue_mutex);
         solution_id = solution_queue_pop(queue);
-        pthread_mutex_unlock(&queue_mutex);
         if (solution_id < 1000) {
             if (STOP) {
                 break;
@@ -161,12 +154,12 @@ void working_solution() {
 
 
 void work() {
-
     log_info("query_size : %zu", query_size);
     log_info("max_running: %zu", max_running);
 
     /* 初始化队列 */
     queue = solution_queue_create(query_size * 4);
+    queue->mutex = &queue_mutex;
 
     /* 启动生产者线程 */
     pthread_t *fetch_thread = (pthread_t *) malloc(sizeof(pthread_t) * 1);
@@ -178,14 +171,17 @@ void work() {
         pthread_create(&working_threads[i], NULL, (void *(*)(void *)) working_solution, NULL);
     }
 
+    /* 阻塞进程 */
     pthread_join(*fetch_thread, NULL);
     for (size_t i = 0; i < max_running; i++) {
         pthread_join(working_threads[i], NULL);
     }
 
+    /* 清理 */
     free(fetch_thread);
     free(working_threads);
     solution_queue_destroy(queue);
+    queue->mutex = NULL;
     queue = NULL;
 }
 
@@ -260,12 +256,7 @@ int main(int argc, const char *argv[]) {
         return -1;
     }
 
-    if (
-            argv_exist_switch(argc, argv, "--version")
-            || argv_exist_switch(argc, argv, "-version")
-            || argv_exist_switch(argc, argv, "-v")
-            || argv_exist_switch(argc, argv, "-V")
-            ) {
+    if (argv_exist_switch(argc, argv, "--version")) {
         printf("justoj-core        version: %s\n", get_version());
         return EXIT_SUCCESS;
     }
@@ -298,19 +289,20 @@ int main(int argc, const char *argv[]) {
     log_add_fp(log_file, LOG_INFO);
 //    log_set_quiet(true);
 
-    log_info("VERSION: %s", get_version());
-    log_info("JustOJ Core Started");
-    log_info("OJ_HOME: [%s]", base_path);
-    log_info("Lock PID File: [%s]", lock_file);
 
     /* Read judge.conf */
     init_judge_conf();
 
+    log_info("VERSION      : %s", get_version());
+    log_info("URL_BASE     : %s", http_base_url);
+    log_info("OJ_HOME      : %s", base_path);
+
+
     log_info("Check secure code");
     if (!judge_http_api_check_secure_code(http_base_url, secure_code)) {
-        log_info("Secure code is invalid.");
+        log_info("ERROR: Secure code is invalid.");
         log_info("JustOJ Core STOPPED");
-        return 1;
+        return EXIT_FAILURE;
     }
     log_info("Check secure code successfully.");
 
@@ -318,12 +310,11 @@ int main(int argc, const char *argv[]) {
 
     signal(SIGINT, call_for_exit);
     signal(SIGUSR1, call_for_exit);
-    signal(SIGUSR2, call_for_status);
 
     log_info("Start to working... ");
 
     work();
 
     log_info("JustOJ Core STOPPED");
-    return 0;
+    return EXIT_SUCCESS;
 }
