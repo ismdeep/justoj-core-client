@@ -61,7 +61,7 @@ size_t judge_http_api_get_jobs(
         solution_ids[i] = 0;
     }
     while (fscanf(fp, "%s", buf) != EOF) {
-        int solution_id = strtol(buf, NULL, 10);
+        int solution_id = atoi(buf);
         if (solution_id > 1000)
             solution_ids[jobs_cnt++] = solution_id;
     }
