@@ -970,7 +970,6 @@ int main(int argc, const char **argv) {
                 user_time = 0;
             }
         }
-//        write_log("==> [%s] %d %s [%s] %dms", client_name, solution_id, result_text[ac_flag], dirp->d_name, user_time);
     }
 
     /* 11. 上传测试结果 */
