@@ -36,6 +36,7 @@ static char lock_file[BUFFER_SIZE];
 static char secure_code[BUFFER_SIZE];
 static char base_path[BUFFER_SIZE];
 static char client_name[BUFFER_SIZE];
+static char client[BUFFER_SIZE];
 static char oj_lang_set[BUFFER_SIZE];
 static int max_running;
 static int query_size;
@@ -73,6 +74,7 @@ void init_judge_conf() {
             read_buf(buf, "OJ_SECURE_CODE", secure_code);
             read_buf(buf, "OJ_HTTP_BASE_URL", http_base_url);
             read_buf(buf, "OJ_LANG_SET", oj_lang_set);
+            read_buf(buf, "CLIENT", client);
         }
     } else {
         log_info("Config File not found!! [%s]", config_file_path);
@@ -95,7 +97,7 @@ void run_client(int solution_id) {
 
     LIM.rlim_cur = LIM.rlim_max = 200;
     setrlimit(RLIMIT_NPROC, &LIM);
-    execute_cmd("justoj-core-client %s %d", base_path, solution_id);
+    execute_cmd("%s %s %d", client, base_path, solution_id);
     log_info("%d DONE", solution_id);
 }
 
@@ -295,9 +297,15 @@ int main(int argc, const char *argv[]) {
     /* Read judge.conf */
     init_judge_conf();
 
+    if (strcmp(client, "") == 0) {
+        log_error("CLIENT is EMPTY. [%s]", client);
+        return EXIT_FAILURE;
+    }
+
     log_info("VERSION      : %s", get_version());
     log_info("URL_BASE     : %s", http_base_url);
     log_info("OJ_HOME      : %s", base_path);
+    log_info("CLIENT       : %s", client);
 
     if (!judge_http_api_check_secure_code(http_base_url, secure_code)) {
         log_info("ERROR: Secure code is invalid.");
