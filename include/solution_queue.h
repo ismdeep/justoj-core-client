@@ -9,13 +9,16 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
+
 
 struct SolutionQueue {
-    size_t max_size;
-    size_t size;
-    size_t *solution_ids;
-    size_t push_cursor;
-    size_t pop_cursor;
+    size_t             max_size;
+    size_t             size;
+    size_t             *solution_ids;
+    size_t             push_cursor;
+    size_t             pop_cursor;
+    pthread_mutex_t    *mutex;
 };
 
 struct SolutionQueue *solution_queue_create(size_t max_size) {
@@ -25,6 +28,7 @@ struct SolutionQueue *solution_queue_create(size_t max_size) {
     queue->solution_ids = (size_t *) malloc(sizeof(size_t) * max_size);
     queue->push_cursor = 0;
     queue->pop_cursor  = 0;
+    queue->mutex = NULL;
     return queue;
 }
 
@@ -33,22 +37,37 @@ void solution_queue_destroy(struct SolutionQueue *queue) {
     free(queue);
 }
 
-void solution_queue_push(struct SolutionQueue *queue, size_t solution_id) {
+bool solution_queue_push(struct SolutionQueue *queue, size_t solution_id) {
     size_t index;
+    bool flag = false;
+
+    /* mutex lock */
+    if (queue->mutex != NULL) pthread_mutex_lock(queue->mutex);
+
     for (size_t i = 0; i < queue->max_size; ++i) {
         index = (queue->push_cursor + i) % queue->max_size;
         if (queue->solution_ids[index] == 0) {
             queue->solution_ids[index] = solution_id;
             ++queue->size;
             queue->push_cursor = (index + 1) % queue->max_size;
-            return;
+            flag = true;
+            break;
         }
     }
+
+    /* mutex unlock */
+    if (queue->mutex != NULL) pthread_mutex_unlock(queue->mutex);
+
+    return flag;
 }
 
 size_t solution_queue_pop(struct SolutionQueue *queue) {
     size_t solution_id = 0;
     size_t index;
+
+    /* mutex lock */
+    if (queue->mutex != NULL) pthread_mutex_lock(queue->mutex);
+
     for (size_t i = 0; i < queue->max_size; ++i) {
         index = (queue->pop_cursor + i) % queue->max_size;
         if (queue->solution_ids[index] != 0) {
@@ -59,8 +78,11 @@ size_t solution_queue_pop(struct SolutionQueue *queue) {
             break;
         }
     }
+
+    /* mutex unlock */
+    if (queue->mutex != NULL) pthread_mutex_unlock(queue->mutex);
+
     return solution_id;
 }
-
 
 #endif //JUSTOJ_CORE_SOLUTION_QUEUE_H
