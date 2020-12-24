@@ -620,6 +620,7 @@ void judge_solution(char *oj_home, int *ACflg, int *usedtime, int time_lmt, int 
             }
         } else {
             comp_res = compare(outfile, userfile);
+            printf("%s,%s\n", outfile, userfile);
         }
         if (comp_res == OJ_WA) {
             *ACflg = OJ_WA;
@@ -721,6 +722,9 @@ void watch_solution(
                     case SIGCHLD:
                     case SIGALRM:
                         alarm(0);
+                        *ACflg = OJ_TL;
+                        *usedtime = time_lmt * 1000;
+                        break;
                     case SIGKILL:
                     case SIGXCPU:
                         *ACflg = OJ_TL;
@@ -754,6 +758,8 @@ void watch_solution(
                     case SIGCHLD:
                     case SIGALRM:
                         alarm(0);
+                        *ACflg = OJ_TL;
+                        break;
                     case SIGKILL:
                     case SIGXCPU:
                         *ACflg = OJ_TL;
@@ -938,6 +944,9 @@ int main(int argc, const char **argv) {
     // using http to get remote test data files
     if (p_id > 0 && (dp = opendir(data_path)) == NULL) {
         log_info("No such dir:%s!\n", data_path);
+        chdir(base_path);
+        execute_cmd("rm -rf run%d", solution_id);
+        update_solution(solution_id, OJ_RE, 0, 0);
         exit(-1);
     }
 

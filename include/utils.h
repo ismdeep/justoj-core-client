@@ -128,105 +128,51 @@ FILE *read_cmd_output(const char *fmt, ...) {
     return ret;
 }
 
-const char *getFileNameFromPath(const char *path) {
-    for (int i = strlen(path); i >= 0; i--) {
-        if (path[i] == '/')
-            return &path[i + 1];
-    }
-    return path;
-}
 
-void find_next_nonspace(int *c1, int *c2, FILE *f1, FILE *f2, int *ret) {
-    // Find the next non-space character or \n.
-    while ((isspace(*c1)) || (isspace(*c2))) {
-        if (*c1 != *c2) {
-            if (*c2 == EOF) {
-                do {
-                    *c1 = fgetc(f1);
-                } while (isspace(*c1));
-                continue;
-            } else if (*c1 == EOF) {
-                do {
-                    *c2 = fgetc(f2);
-                } while (isspace(*c2));
-                continue;
-            } else if (isspace(*c1) && isspace(*c2)) {
-                while (*c2 == '\n' && isspace(*c1) && *c1 != '\n') *c1 = fgetc(f1);
-                while (*c1 == '\n' && isspace(*c2) && *c2 != '\n') *c2 = fgetc(f2);
-            } else {
-                *ret = OJ_AC;
-            }
+unsigned char get_next_nonspace(FILE *fp) {
+    unsigned char ch;
+    while (true) {
+        ch = fgetc(fp);
+        if ((char)ch == ' ' || (char)ch == '\n' || (char)ch == '\t') {
+            continue;
         }
-        if (isspace(*c1)) {
-            *c1 = fgetc(f1);
-        }
-        if (isspace(*c2)) {
-            *c2 = fgetc(f2);
-        }
+        return ch;
     }
 }
 
-void delnextline(char s[]) {
-    int L;
-    L = strlen(s);
-    while (L > 0 && (s[L - 1] == '\n' || s[L - 1] == '\r'))
-        s[--L] = 0;
-}
 
 int compare(const char *file1, const char *file2) {
-    int ret;
-    ret = OJ_AC;
-    int c1 = 0, c2 = 0;
-    FILE *f1, *f2;
-    f1 = fopen(file1, "re");
-    f2 = fopen(file2, "re");
-    if (!f1 || !f2) {
-        ret = OJ_RE;
-    } else
-        while (true) {
-            // Find the first non-space character at the beginning of line.
-            // Blank lines are skipped.
-            c1 = fgetc(f1);
-            c2 = fgetc(f2);
-            find_next_nonspace(&c1, &c2, f1, f2, &ret);
-            // Compare the current line.
-            while (true) {
-                // Read until 2 files return a space or 0 together.
-                while ((!isspace(c1) && c1) || (!isspace(c2) && c2)) {
-                    if (c1 == EOF && c2 == EOF) {
-                        goto end;
-                    }
-                    if (c1 == EOF || c2 == EOF) {
-                        break;
-                    }
-                    if (c1 != c2) {
-                        // Consecutive non-space characters should be all exactly the same
-                        ret = OJ_WA;
-                        goto end;
-                    }
-                    c1 = fgetc(f1);
-                    c2 = fgetc(f2);
-                }
-                find_next_nonspace(&c1, &c2, f1, f2, &ret);
-                if (c1 == EOF && c2 == EOF) {
-                    goto end;
-                }
-                if (c1 == EOF || c2 == EOF) {
-                    ret = OJ_WA;
-                    goto end;
-                }
+    FILE *fp1 = fopen(file1, "re");
+    FILE *fp2 = fopen(file2, "re");
+    if (!fp1 || !fp2) {
+        if (fp1) fclose(fp2);
+        if (fp2) fclose(fp2);
+        return OJ_RE;
+    }
 
-                if ((c1 == '\n' || !c1) && (c2 == '\n' || !c2)) {
-                    break;
-                }
-            }
+    unsigned char ch1, ch2;
+    int result;
+
+    while (true) {
+        fflush(stdout);
+        ch1 = get_next_nonspace(fp1);
+        ch2 = get_next_nonspace(fp2);
+
+        if (ch1 != ch2) {
+            result = OJ_WA;
+            break;
         }
-    end:
-    if (f1)
-        fclose(f1);
-    if (f2)
-        fclose(f2);
-    return ret;
+
+        if ((char) ch1 == EOF) {
+            result = OJ_AC;
+            break;
+        }
+    }
+
+    fclose(fp1);
+    fclose(fp2);
+
+    return result;
 }
 
 char *escape(char s[], const char t[]) {
