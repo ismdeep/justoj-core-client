@@ -50,6 +50,10 @@ pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void call_for_exit() {
     STOP = true;
+    printf("Signal: STOPPING.\n");
+    printf("Signal: STOPPING.\n");
+    printf("Signal: STOPPING.\n");
+
     log_info("Stopping judged...");
 }
 
