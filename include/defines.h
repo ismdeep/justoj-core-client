@@ -41,4 +41,17 @@
 #define OJ_CO 12
 #define OJ_TR 13
 
+
+#define STD_MB 1048576LL
+#define STD_T_LIM 2
+#define STD_F_LIM (STD_MB<<5)  //default file size limit 32m ,2^5=32
+#define STD_M_LIM (STD_MB<<7)  //default memory limit 128m ,2^7=128
+
+#define CALL_ARRAY_SIZE 512
+
+#define REG_SYSCALL orig_rax
+#define REG_RET rax
+#define REG_ARG0 rdi
+#define REG_ARG1 rsi
+
 #endif //JUSTOJ_CORE_CLIENT_DEFINES_H
