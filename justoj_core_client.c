@@ -496,14 +496,13 @@ int main(int argc, const char **argv) {
         exit(-1);
     }
 
-    int ac_flag = OJ_AC;
     int name_len;
     int user_time = 0;
     int top_memory = 0;
     int num_of_test = 0;
 
     /* 10. 运行所有测试数据 */
-    while (ac_flag == OJ_AC && (dirp = readdir(dp)) != NULL) {
+    while (solution_info->result == OJ_AC && (dirp = readdir(dp)) != NULL) {
         name_len = isInFile(dirp->d_name); // check if the file is *.in or not
         if (name_len == 0)
             continue;
@@ -527,8 +526,7 @@ int main(int argc, const char **argv) {
 
     /* 11. 上传测试结果 */
     if (use_max_time) user_time = max_case_time;
-    if (ac_flag == OJ_TL) user_time = solution_info->time_lmt * 1000;
-    solution_info->result = ac_flag;
+    if (solution_info->result == OJ_TL) user_time = solution_info->time_lmt * 1000;
     solution_info->result_time = user_time;
     solution_info->result_memory = top_memory >> 10;
     push_solution_result(solution_info);
