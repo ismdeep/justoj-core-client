@@ -98,12 +98,18 @@ void prepare_files(
     strncpy(fname0, filename, namelen);
     fname0[namelen] = 0;
     escape(fname, fname0);
-    sprintf(infile, "%s/data/%d/%s.in", oj_home, solution_info->problem_id, fname);
-    execute_cmd("/bin/cp '%s' %s/run%d/data.in", infile, solution_info->solution_id, system_info->oj_home);
-    execute_cmd("/bin/cp %s/data/%d/*.dic %s/ 2> /dev/null", oj_home, solution_info->problem_id, system_info->work_dir);
+    printf("--> %d\n", __LINE__);
 
+    sprintf(infile, "%s/data/%d/%s.in", oj_home, solution_info->problem_id, fname);
+    printf("--> %d\n", __LINE__);
+    execute_cmd("/bin/cp '%s' %s/run%d/data.in", infile, solution_info->solution_id, system_info->oj_home);
+    printf("--> %d\n", __LINE__);
+    execute_cmd("/bin/cp %s/data/%d/*.dic %s/ 2> /dev/null", oj_home, solution_info->problem_id, system_info->work_dir);
+    printf("--> %d\n", __LINE__);
     sprintf(outfile, "%s/data/%d/%s.out", oj_home, solution_info->problem_id, fname0);
+    printf("--> %d\n", __LINE__);
     sprintf(userfile, "%s/run%d/user.out", oj_home, solution_id);
+    printf("--> %d\n", __LINE__);
 }
 
 void run_solution(struct SolutionInfo *solution_info, const int *usedtime) {
