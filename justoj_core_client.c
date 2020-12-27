@@ -532,14 +532,18 @@ int main(int argc, const char **argv) {
         }
     }
 
-    printf("--> 533\n");
+    printf("--> %d\n", __LINE__);
 
     /* 11. 上传测试结果 */
     if (use_max_time) user_time = max_case_time;
     if (solution_info->result == OJ_TL) user_time = solution_info->time_lmt * 1000;
+    printf("--> %d\n", __LINE__);
     solution_info->result_time = user_time;
+    printf("--> %d\n", __LINE__);
     solution_info->result_memory = top_memory >> 10;
+    printf("--> %d\n", __LINE__);
     push_solution_result(solution_info);
+    printf("--> %d\n", __LINE__);
 
     /* 清理环境 */
     chdir(system_info->oj_home);
