@@ -534,6 +534,8 @@ int main(int argc, const char **argv) {
 
     printf("--> %d\n", __LINE__);
 
+    printf("--> %d result: %d\n", __LINE__, solution_info->result);
+
     /* 11. 上传测试结果 */
     if (use_max_time) user_time = max_case_time;
     if (solution_info->result == OJ_TL) user_time = solution_info->time_lmt * 1000;
