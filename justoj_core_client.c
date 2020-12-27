@@ -512,8 +512,10 @@ int main(int argc, const char **argv) {
     solution_info->result = OJ_AC;
     while (solution_info->result == OJ_AC && (dirp = readdir(dp)) != NULL) {
         name_len = isInFile(dirp->d_name); // check if the file is *.in or not
+        printf("--> %d\n", __LINE__);
         if (name_len == 0)
             continue;
+        printf("--> %d\n", __LINE__);
         prepare_files(
                 solution_info, system_info->oj_home, dirp->d_name, name_len, in_file, out_file,
                 user_file, solution_info->solution_id);
