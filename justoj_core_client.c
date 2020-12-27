@@ -510,6 +510,7 @@ int main(int argc, const char **argv) {
     printf("--> 507\n");
 
     /* 10. 运行所有测试数据 */
+    solution_info->result = OJ_AC;
     while (solution_info->result == OJ_AC && (dirp = readdir(dp)) != NULL) {
         name_len = isInFile(dirp->d_name); // check if the file is *.in or not
         if (name_len == 0)
