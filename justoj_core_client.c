@@ -327,9 +327,7 @@ int special_judge(char *oj_home, int problem_id, char *infile, char *outfile,
 void judge_solution(struct SolutionInfo *solution_info,
                     char *infile, char *outfile, char *userfile,
                     int num_of_test) {
-//usedtime-=1000;
     int comp_res;
-    num_of_test = 1;
     if (solution_info->result == OJ_AC &&
         solution_info->result_time > solution_info->time_lmt * 1000 * (use_max_time ? 1 : num_of_test))
         solution_info->result = OJ_TL;
@@ -346,11 +344,12 @@ void judge_solution(struct SolutionInfo *solution_info,
             }
         } else {
             comp_res = compare(outfile, userfile);
+            printf("%s,%s,%d\n", outfile, userfile, comp_res);
         }
         if (comp_res == OJ_WA) {
             solution_info->result = OJ_WA;
         }
-        solution_info->result = comp_res;
+//        solution_info->result = comp_res;
     }
 //jvm popup messages, if don't consider them will get miss-WrongAnswer
     if (solution_info->lang_id == 3) {

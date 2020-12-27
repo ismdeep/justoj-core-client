@@ -95,7 +95,7 @@ void watch_solution(
         }
 
         if (!solution_info->is_special_judge && get_file_size(userfile) > get_file_size(outfile) * 2 + 1024) {
-            solution_info->result = OJ_OL;
+//            solution_info->result = OJ_OL;
             ptrace(PTRACE_KILL, pidApp, NULL, NULL);
             break;
         }
