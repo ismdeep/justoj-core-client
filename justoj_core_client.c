@@ -99,7 +99,7 @@ void prepare_files(
     fname0[namelen] = 0;
     escape(fname, fname0);
     sprintf(infile, "%s/data/%d/%s.in", oj_home, solution_info->problem_id, fname);
-    execute_cmd("/bin/cp '%s' %s/data.in", infile, system_info->oj_home);
+    execute_cmd("/bin/cp '%s' %s/run%d/data.in", infile, solution_info->solution_id, system_info->oj_home);
     execute_cmd("/bin/cp %s/data/%d/*.dic %s/ 2> /dev/null", oj_home, solution_info->problem_id, system_info->work_dir);
 
     sprintf(outfile, "%s/data/%d/%s.out", oj_home, solution_info->problem_id, fname0);
