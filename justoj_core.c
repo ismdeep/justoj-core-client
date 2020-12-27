@@ -115,7 +115,7 @@ void fetch_solution_ids() {
             }
 
             SLEEP_MS(100);
-            continue;;
+            continue;
         }
 
         /* get the database info */
