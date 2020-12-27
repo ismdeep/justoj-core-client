@@ -26,7 +26,6 @@
 #include <solution_queue.h>
 
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
-#define STD_MB 1048576
 
 #define TIMES(id, size) for(int id = 0; id < (size); ++id)
 

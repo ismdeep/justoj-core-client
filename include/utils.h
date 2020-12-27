@@ -133,7 +133,7 @@ unsigned char get_next_nonspace(FILE *fp) {
     unsigned char ch;
     while (true) {
         ch = fgetc(fp);
-        if ((char)ch == ' ' || (char)ch == '\n' || (char)ch == '\t') {
+        if ((char)ch == ' ' || (char)ch == '\n' || (char)ch == '\t' || (char)ch == '\r') {
             continue;
         }
         return ch;
