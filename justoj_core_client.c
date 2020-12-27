@@ -517,10 +517,15 @@ int main(int argc, const char **argv) {
         prepare_files(
                 solution_info, system_info->oj_home, dirp->d_name, name_len, in_file, out_file,
                 user_file, solution_info->solution_id);
+
+        printf("--> %d\n", __LINE__);
+
         init_syscall_limits(solution_info);
         pid_t pidApp = fork();
         if (pidApp == 0) {
+            printf("--> %d\n", __LINE__);
             run_solution(solution_info, &user_time);
+            printf("--> %d\n", __LINE__);
         } else {
             num_of_test++;
             watch_solution(system_info, solution_info, pidApp, in_file, user_file, out_file);
