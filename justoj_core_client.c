@@ -102,7 +102,7 @@ void prepare_files(
 
     sprintf(infile, "%s/data/%d/%s.in", oj_home, solution_info->problem_id, fname);
     printf("--> %d\n", __LINE__);
-    execute_cmd("/bin/cp '%s' %s/run%d/data.in", infile, solution_info->solution_id, system_info->oj_home);
+    execute_cmd("/bin/cp '%s' %s/run%d/data.in", infile, system_info->oj_home, solution_info->solution_id);
     printf("--> %d\n", __LINE__);
     execute_cmd("/bin/cp %s/data/%d/*.dic %s/ 2> /dev/null", oj_home, solution_info->problem_id, system_info->work_dir);
     printf("--> %d\n", __LINE__);
