@@ -377,7 +377,6 @@ void init_parameters(int argc, const char **argv, char *oj_home, int *solution_i
  */
 int main(int argc, const char **argv) {
     char user_id[BUFFER_SIZE];
-    int solution_id;
     char run_work_dir[BUFFER_SIZE];
     int max_case_time = 0;
     if (
@@ -397,14 +396,17 @@ int main(int argc, const char **argv) {
         exit(1);
     }
 
+    printf("--> 450\n");
+
     /* 创建系统信息 */
     system_info = system_info_create();
+    struct SolutionInfo *solution_info = solution_info_create();
 
     /* 1. 读取命令行参数 */
-    init_parameters(argc, argv, system_info->oj_home, &solution_id);
+    init_parameters(argc, argv, system_info->oj_home, &solution_info->solution_id);
 
-    sprintf(system_info->work_dir, "%s/run%d", system_info->oj_home, solution_id);
-    sprintf(run_work_dir, "run%d", solution_id);
+    sprintf(system_info->work_dir, "%s/run%d", system_info->oj_home, solution_info->solution_id);
+    sprintf(run_work_dir, "run%d", solution_info->solution_id);
 
     char log_file_path[1024];
     sprintf(log_file_path, "%s/product.log", system_info->oj_home);
@@ -414,15 +416,15 @@ int main(int argc, const char **argv) {
 
     /* 2. 读取配置文件 */
     init_judge_conf(system_info->oj_home);
-    log_info("==> [%s] %d START", system_info->client_name, solution_id);
+    log_info("==> [%s] %d START", system_info->client_name, solution_info->solution_id);
 
     /* 3. 初始化环境 */
     chdir(system_info->oj_home);
     execute_cmd("/bin/mkdir -p %s", run_work_dir);
-    execute_cmd("chmod -R 777 run%d", solution_id);
+    execute_cmd("chmod -R 777 run%d", solution_info->solution_id);
     chdir(system_info->work_dir);
 
-    struct SolutionInfo *solution_info = solution_info_create();
+
 
     /* 4. 获取Solution信息 */
     judge_http_api_get_solution_info(system_info, solution_info);
@@ -443,9 +445,11 @@ int main(int argc, const char **argv) {
         push_solution_result(solution_info);
         /* 清理环境 */
         chdir(system_info->oj_home);
-        execute_cmd("rm -rf run%d", solution_id);
+        execute_cmd("rm -rf run%d", solution_info->solution_id);
         exit(0);
     }
+
+    printf("--> 450\n");
 
     /* 8. 配置时间超限、内存超限 */
     //java is lucky
@@ -467,6 +471,8 @@ int main(int argc, const char **argv) {
     if (solution_info->mem_lmt > 1024 || solution_info->mem_lmt < 1)
         solution_info->mem_lmt = 1024;
 
+    printf("--> 472\n");
+
     /* 9. 设置为正在运行状态 */
     solution_info->result = OJ_RI;
     solution_info->result_time = 0;
@@ -487,7 +493,7 @@ int main(int argc, const char **argv) {
     if (solution_info->problem_id > 0 && (dp = opendir(data_path)) == NULL) {
         log_info("No such dir:%s!\n", data_path);
         chdir(system_info->oj_home);
-        execute_cmd("rm -rf run%d", solution_id);
+        execute_cmd("rm -rf run%d", solution_info->solution_id);
         solution_info->result = OJ_RE;
         solution_info->result_time = 0;
         solution_info->result_memory = 0;
@@ -501,6 +507,8 @@ int main(int argc, const char **argv) {
     int top_memory = 0;
     int num_of_test = 0;
 
+    printf("--> 507\n");
+
     /* 10. 运行所有测试数据 */
     while (solution_info->result == OJ_AC && (dirp = readdir(dp)) != NULL) {
         name_len = isInFile(dirp->d_name); // check if the file is *.in or not
@@ -508,7 +516,7 @@ int main(int argc, const char **argv) {
             continue;
         prepare_files(
                 solution_info, system_info->oj_home, dirp->d_name, name_len, in_file, out_file,
-                user_file, solution_id);
+                user_file, solution_info->solution_id);
         init_syscall_limits(solution_info);
         pid_t pidApp = fork();
         if (pidApp == 0) {
@@ -524,6 +532,8 @@ int main(int argc, const char **argv) {
         }
     }
 
+    printf("--> 533\n");
+
     /* 11. 上传测试结果 */
     if (use_max_time) user_time = max_case_time;
     if (solution_info->result == OJ_TL) user_time = solution_info->time_lmt * 1000;
@@ -533,7 +543,7 @@ int main(int argc, const char **argv) {
 
     /* 清理环境 */
     chdir(system_info->oj_home);
-    execute_cmd("rm -rf run%d", solution_id);
+    execute_cmd("rm -rf run%d", solution_info->solution_id);
     free(data_path);
     free(in_file);
     free(out_file);
