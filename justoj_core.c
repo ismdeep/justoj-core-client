@@ -247,13 +247,6 @@ void data_monitor_worker() {
     }
 }
 
-void heartbeat_worker() {
-    while (!STOP) {
-        heartbeat(system_info);
-        SLEEP_S(60);
-    }
-}
-
 /**
  * main() Function
  *
