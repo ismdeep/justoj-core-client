@@ -25,27 +25,19 @@
 
 #include <solution_queue.h>
 
+#include <system_info.h>
+
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
-
-#define TIMES(id, size) for(int id = 0; id < (size); ++id)
-
 
 
 static char lock_file[BUFFER_SIZE];
-static char secure_code[BUFFER_SIZE];
-static char base_path[BUFFER_SIZE];
-static char client_name[BUFFER_SIZE];
-static char client[BUFFER_SIZE];
-static char oj_lang_set[BUFFER_SIZE];
-static int max_running;
-static int query_size;
-static int sleep_time;
-static char http_base_url[BUFFER_SIZE];
 
 static bool STOP = false;
 
 struct SolutionQueue *queue;
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+struct SystemInfo *system_info;
 
 void call_for_exit() {
     STOP = true;
@@ -60,24 +52,24 @@ void call_for_exit() {
 void init_judge_conf() {
     FILE *fp = NULL;
     char buf[BUFFER_SIZE];
-    max_running = 4;
-    sleep_time = 1;
-    strcpy(oj_lang_set, "0,1,2,3,4,5,6,7,8,9,10");
+    system_info->max_running = 4;
+    system_info->sleep_time = 1;
+    strcpy(system_info->oj_lang_set, "0,1,2,3,4,5,6,7,8,9,10");
 
     char config_file_path[BUFFER_SIZE];
-    sprintf(config_file_path, "%s/etc/judge.conf", base_path);
+    sprintf(config_file_path, "%s/etc/judge.conf", system_info->oj_home);
 
     fp = fopen(config_file_path, "r");
     if (fp != NULL) {
         while (fgets(buf, BUFFER_SIZE - 1, fp)) {
-            read_int(buf, "OJ_RUNNING", &max_running);
-            read_int(buf, "OJ_QUERY_SIZE", &query_size);
-            read_int(buf, "OJ_SLEEP_TIME", &sleep_time);
-            read_buf(buf, "OJ_CLIENT_NAME", client_name);
-            read_buf(buf, "OJ_SECURE_CODE", secure_code);
-            read_buf(buf, "OJ_HTTP_BASE_URL", http_base_url);
-            read_buf(buf, "OJ_LANG_SET", oj_lang_set);
-            read_buf(buf, "CLIENT", client);
+            read_int(buf, "OJ_RUNNING", &system_info->max_running);
+            read_int(buf, "OJ_QUERY_SIZE", &system_info->query_size);
+            read_int(buf, "OJ_SLEEP_TIME", &system_info->sleep_time);
+            read_buf(buf, "OJ_CLIENT_NAME", system_info->client_name);
+            read_buf(buf, "OJ_SECURE_CODE", system_info->secure_code);
+            read_buf(buf, "OJ_HTTP_BASE_URL", system_info->http_base_url);
+            read_buf(buf, "OJ_LANG_SET", system_info->oj_lang_set);
+            read_buf(buf, "CLIENT", system_info->client_path);
         }
     } else {
         log_info("Config File not found!! [%s]", config_file_path);
@@ -100,16 +92,16 @@ void run_client(int solution_id) {
 
     LIM.rlim_cur = LIM.rlim_max = 200;
     setrlimit(RLIMIT_NPROC, &LIM);
-    execute_cmd("%s %s %d", client, base_path, solution_id);
+    execute_cmd("%s %s %d", system_info->client_path, system_info->oj_home, solution_id);
     log_info("%d DONE", solution_id);
 }
 
 
 void fetch_solution_ids() {
-    int *solution_ids = (int *) malloc(sizeof(int) * query_size);
+    int *solution_ids = (int *) malloc(sizeof(int) * system_info->query_size);
 
     while (true) {
-        if (queue->size >= query_size) {
+        if (queue->size >= system_info->query_size) {
             if (STOP) {
                 break;
             }
@@ -119,7 +111,7 @@ void fetch_solution_ids() {
         }
 
         /* get the database info */
-        int ret = judge_http_api_get_solutions(http_base_url, secure_code, oj_lang_set, query_size, solution_ids);
+        int ret = get_pending_solutions(system_info, solution_ids);
         if (0 == ret) {
             if (STOP) {
                 break;
@@ -127,7 +119,7 @@ void fetch_solution_ids() {
             continue;
         }
 
-        for (int i = 0; i < query_size; i++) {
+        for (int i = 0; i < system_info->query_size; i++) {
             if (solution_ids[i] >= 1000) {
                 while (!solution_queue_push(queue, solution_ids[i])) {
                     SLEEP_MS(100);
@@ -153,7 +145,7 @@ void working_solution() {
             continue;
         }
 
-        run_client( solution_id );
+        run_client(solution_id);
     }
 
     log_info("%p => working_solution() STOPPED.", pthread_self());
@@ -161,11 +153,11 @@ void working_solution() {
 
 
 void work() {
-    log_info("query_size : %d", query_size);
-    log_info("max_running: %d", max_running);
+    log_info("query_size : %d", system_info->query_size);
+    log_info("max_running: %d", system_info->max_running);
 
     /* 初始化队列 */
-    queue = solution_queue_create(query_size * 4);
+    queue = solution_queue_create(system_info->query_size * 4);
     queue->mutex = &queue_mutex;
 
     /* 启动生产者线程 */
@@ -173,14 +165,14 @@ void work() {
     pthread_create(fetch_thread, NULL, (void *(*)(void *)) fetch_solution_ids, NULL);
 
     /* 启动消费者线程们 */
-    pthread_t *working_threads = (pthread_t *) malloc(sizeof(pthread_t) * max_running);
-    for (int i = 0; i < max_running; i++) {
+    pthread_t *working_threads = (pthread_t *) malloc(sizeof(pthread_t) * system_info->max_running);
+    for (int i = 0; i < system_info->max_running; i++) {
         pthread_create(&working_threads[i], NULL, (void *(*)(void *)) working_solution, NULL);
     }
 
     /* 阻塞进程 */
     pthread_join(*fetch_thread, NULL);
-    for (int i = 0; i < max_running; i++) {
+    for (int i = 0; i < system_info->max_running; i++) {
         pthread_join(working_threads[i], NULL);
     }
 
@@ -234,7 +226,7 @@ int daemon_init(void) {
 
     /* child continues */
     setsid(); /* become session leader */
-    chdir(base_path); /* change working directory */
+    chdir(system_info->oj_home); /* change working directory */
     umask(0); /* clear file mode creation mask */
     close(0); /* close stdin */
     close(1); /* close stdout */
@@ -268,13 +260,15 @@ int main(int argc, const char *argv[]) {
         return EXIT_SUCCESS;
     }
 
+    system_info = system_info_create();
+
     /* Set base path (oj_home) */
-    strcpy(base_path, argv[1]);
-    chdir(base_path);
-    sprintf(lock_file, "%s/lock.pid", base_path);
+    strcpy(system_info->oj_home, argv[1]);
+    chdir(system_info->oj_home);
+    sprintf(lock_file, "%s/lock.pid", system_info->oj_home);
 
     char log_file_path[1024];
-    sprintf(log_file_path, "%s/product.log", base_path);
+    sprintf(log_file_path, "%s/product.log", system_info->oj_home);
 
     /* Determine if it is running under daemon mode. */
     bool daemon_flag = false;
@@ -300,17 +294,18 @@ int main(int argc, const char *argv[]) {
     /* Read judge.conf */
     init_judge_conf();
 
-    if (strcmp(client, "") == 0) {
-        log_error("CLIENT is EMPTY. [%s]", client);
+    if (strcmp(system_info->client_path, "") == 0) {
+        log_error("CLIENT is EMPTY. [%s]", system_info->client_path);
         return EXIT_FAILURE;
     }
 
     log_info("VERSION      : %s", get_version());
-    log_info("URL_BASE     : %s", http_base_url);
-    log_info("OJ_HOME      : %s", base_path);
-    log_info("CLIENT       : %s", client);
+    log_info("URL_BASE     : %s", system_info->http_base_url);
+    log_info("OJ_HOME      : %s", system_info->oj_home);
+    log_info("CLIENT NAME  : %s", system_info->client_name);
+    log_info("CLIENT PATH  : %s", system_info->client_path);
 
-    if (!judge_http_api_check_secure_code(http_base_url, secure_code)) {
+    if (!check_secure_code(system_info)) {
         log_info("ERROR: Secure code is invalid.");
         log_info("JustOJ Core STOPPED");
         return EXIT_FAILURE;

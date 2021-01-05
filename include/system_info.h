@@ -12,10 +12,16 @@
 #include <str_utils.h>
 
 struct SystemInfo {
-    char *oj_home;
-    char *client_name;
-    char *http_base_url;
-    char *secure_code;
+    char *oj_home; // 判题机工作基础目录，包含 etc, data 文件夹
+    char *client_name; // 判题机名称
+    char *client_path; // 判题机路径
+    char *http_base_url; // 服务器网址
+    char *secure_code; // 服务器访问安全密钥
+
+    char *oj_lang_set; // 启用判题语言
+    int max_running; // 同时运行判题数量
+    int query_size; // 单次查询判题组大小
+    int sleep_time; // 休眠时间，单位（s），默认为 1
 
     char *work_dir;
 
@@ -37,8 +43,11 @@ struct SystemInfo *system_info_create() {
 
     system_info->oj_home = create_str(1024);
     system_info->client_name = create_str(1024);
+    system_info->client_path = create_str(1024);
     system_info->http_base_url = create_str(1024);
     system_info->secure_code = create_str(1024);
+    system_info->oj_lang_set = create_str(1024);
+
     system_info->work_dir = create_str(1024);
 
     system_info->python2_path = create_str(1024);

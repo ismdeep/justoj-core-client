@@ -1,5 +1,5 @@
 //
-// Created by ismdeep on 2019/12/18.
+// Created by L. Jiang <l.jiang.1024@gmail.com> on 2019/12/18.
 //
 
 #include <unistd.h>
@@ -83,7 +83,7 @@ void init_judge_conf(char *oj_home) {
 
 void push_solution_result(struct SolutionInfo *solution_info) {
     if (solution_info->result == OJ_TL && solution_info->result_memory == 0) solution_info->result = OJ_ML;
-    judge_http_api_update_solution(system_info, solution_info);
+    update_solution(system_info, solution_info);
     log_info("==> [%s] %d %s", system_info->client_name, solution_info->solution_id,
              result_text[solution_info->result]);
 }
@@ -424,18 +424,18 @@ int main(int argc, const char **argv) {
 
 
     /* 4. 获取Solution信息 */
-    judge_http_api_get_solution_info(system_info, solution_info);
+    get_solution_info(system_info, solution_info);
 
     /* 5. 获取题目信息 */
-    judge_http_api_get_problem_info(system_info, solution_info);
+    get_problem_info(system_info, solution_info);
 
     /* 6. 获取Solution源代码 */
-    judge_http_api_download_source_code(system_info, solution_info);
+    download_source_code(system_info, solution_info);
     execute_cmd("chown judge %s/%s", system_info->work_dir, solution_info->src_path);
 
     /* 7. 编译代码 */
     if (compile(system_info, solution_info->lang_id) != 0) {
-        judge_http_api_add_ce_info_http(system_info, solution_info);
+        upload_ce_info(system_info, solution_info);
         solution_info->result = OJ_CE;
         solution_info->result_time = 0;
         solution_info->result_memory = 0;
