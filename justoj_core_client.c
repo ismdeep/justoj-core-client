@@ -33,10 +33,6 @@
 
 #include <watch_solutions.h>
 
-
-static char data_list[BUFFER_SIZE][BUFFER_SIZE];
-static int data_list_len = 0;
-
 static int java_time_bonus = 5;
 static int java_memory_bonus = 512;
 static int full_diff = 0;

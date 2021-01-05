@@ -41,7 +41,7 @@ struct SystemInfo *system_info;
 
 void call_for_exit() {
     STOP = true;
-    printf("Signal: STOPPING.\n");
+    printf("\r\nSignal: STOPPING.\n");
     printf("Signal: STOPPING.\n");
     printf("Signal: STOPPING.\n");
 
