@@ -259,7 +259,7 @@ int daemon_init(void) {
 int main(int argc, const char *argv[]) {
     if (argc < 2) {
         printf("VERSION: %s\n", get_version());
-        printf("Usage: %s ${base_path}", argv[0]);
+        printf("Usage: %s ${base_path}\n", argv[0]);
         return -1;
     }
 

@@ -344,7 +344,6 @@ void judge_solution(struct SolutionInfo *solution_info,
             }
         } else {
             comp_res = compare(outfile, userfile);
-            printf("%s,%s,%d\n", outfile, userfile, comp_res);
         }
         if (comp_res == OJ_WA) {
             solution_info->result = OJ_WA;
@@ -447,8 +446,6 @@ int main(int argc, const char **argv) {
         exit(0);
     }
 
-    printf("--> 450\n");
-
     /* 8. 配置时间超限、内存超限 */
     //java is lucky
     if (solution_info->lang_id >= 3 && solution_info->lang_id != 10 && solution_info->lang_id != 13 &&
@@ -468,8 +465,6 @@ int main(int argc, const char **argv) {
         solution_info->time_lmt = 300;
     if (solution_info->mem_lmt > 1024 || solution_info->mem_lmt < 1)
         solution_info->mem_lmt = 1024;
-
-    printf("--> 472\n");
 
     /* 9. 设置为正在运行状态 */
     solution_info->result = OJ_RI;
@@ -505,28 +500,21 @@ int main(int argc, const char **argv) {
     int top_memory = 0;
     int num_of_test = 0;
 
-    printf("--> 507\n");
 
     /* 10. 运行所有测试数据 */
     solution_info->result = OJ_AC;
     while (solution_info->result == OJ_AC && (dirp = readdir(dp)) != NULL) {
         name_len = isInFile(dirp->d_name); // check if the file is *.in or not
-        printf("--> %d\n", __LINE__);
         if (name_len == 0)
             continue;
-        printf("--> %d\n", __LINE__);
         prepare_files(
                 solution_info, system_info->oj_home, dirp->d_name, name_len, in_file, out_file,
                 user_file, solution_info->solution_id);
 
-        printf("--> %d\n", __LINE__);
-
         init_syscall_limits(solution_info);
         pid_t pidApp = fork();
         if (pidApp == 0) {
-            printf("--> %d\n", __LINE__);
             run_solution(solution_info, &user_time);
-            printf("--> %d\n", __LINE__);
         } else {
             num_of_test++;
             watch_solution(system_info, solution_info, pidApp, in_file, user_file, out_file);
@@ -538,20 +526,12 @@ int main(int argc, const char **argv) {
         }
     }
 
-    printf("--> %d\n", __LINE__);
-
-    printf("--> %d result: %d\n", __LINE__, solution_info->result);
-
     /* 11. 上传测试结果 */
     if (use_max_time) user_time = max_case_time;
     if (solution_info->result == OJ_TL) user_time = solution_info->time_lmt * 1000;
-    printf("--> %d\n", __LINE__);
     solution_info->result_time = user_time;
-    printf("--> %d\n", __LINE__);
     solution_info->result_memory = top_memory >> 10;
-    printf("--> %d\n", __LINE__);
     push_solution_result(solution_info);
-    printf("--> %d\n", __LINE__);
 
     /* 清理环境 */
     chdir(system_info->oj_home);
