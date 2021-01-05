@@ -27,6 +27,9 @@
 
 #include <system_info.h>
 
+#include <data_monitor.h>
+#include <heartbeat.h>
+
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 
 
@@ -238,6 +241,20 @@ int daemon_init(void) {
     return (0);
 }
 
+void data_monitor_worker() {
+    while (!STOP) {
+        data_monitor(system_info);
+        SLEEP_S(60);
+    }
+}
+
+void heartbeat_worker() {
+    while (!STOP) {
+        heartbeat(system_info);
+        SLEEP_S(60);
+    }
+}
+
 /**
  * main() Function
  *
@@ -314,10 +331,14 @@ int main(int argc, const char *argv[]) {
     signal(SIGINT, call_for_exit);
     signal(SIGUSR1, call_for_exit);
 
+    // Run send justoj-data git bash info thread
+    pthread_t data_monitor_thread;
+    pthread_create(&data_monitor_thread, NULL, (void *(*)(void *)) data_monitor_worker, NULL);
+
     log_info("Start to working... ");
-
     work();
-
     log_info("JustOJ Core STOPPED");
+
+
     return EXIT_SUCCESS;
 }

@@ -48,6 +48,7 @@ FILE *wget_post_fp(char *url, char *post_data) {
     char *cmd = (char *) malloc(sizeof(char) * (strlen(url) + strlen(post_data) + 255));
     sprintf(cmd, "wget -t 3 --post-data=\"%s\" -q -O - \"%s\"", post_data, url);
     FILE *fp = wget_cmd_fp(cmd);
+    free(cmd);
     return fp;
 }
 
