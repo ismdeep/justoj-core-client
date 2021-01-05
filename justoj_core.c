@@ -28,7 +28,6 @@
 #include <system_info.h>
 
 #include <data_monitor.h>
-#include <heartbeat.h>
 
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 
