@@ -40,15 +40,16 @@ static int use_max_time = 0;
 static int use_ptrace = 1;
 
 struct SystemInfo *system_info;
+struct SolutionInfo *solution_info;
 
 /* Read Judge config */
-void init_judge_conf(char *oj_home) {
+void init_judge_conf() {
     FILE *fp = NULL;
     char config_file_path[BUFFER_SIZE];
     char buf[BUFFER_SIZE];
     strcpy(system_info->java_xms, "-Xms32m");
     strcpy(system_info->java_xmx, "-Xmx256m");
-    sprintf(config_file_path, "%s/etc/judge.conf", oj_home);
+    sprintf(config_file_path, "%s/etc/judge.conf", system_info->oj_home);
     fp = fopen(config_file_path, "re");
     if (fp != NULL) {
         while (fgets(buf, BUFFER_SIZE - 1, fp)) {
@@ -69,6 +70,7 @@ void init_judge_conf(char *oj_home) {
             read_buf(buf, "SCHEME", system_info->scheme_path);
             read_buf(buf, "SBCL", system_info->sbcl_path);
             read_buf(buf, "NODEJS", system_info->nodejs_path);
+            read_buf(buf, "DATA", system_info->data_path);
         }
         fclose(fp);
     } else {
@@ -77,32 +79,40 @@ void init_judge_conf(char *oj_home) {
     }
 }
 
-void push_solution_result(struct SolutionInfo *solution_info) {
-    if (solution_info->result == OJ_TL && solution_info->result_memory == 0) solution_info->result = OJ_ML;
+void push_solution_result() {
     update_solution(system_info, solution_info);
-    log_info("==> [%s] %d %s", system_info->client_name, solution_info->solution_id,
+    log_info("==> [%s] %d [LANG:%d] %s",
+             system_info->client_name,
+             solution_info->solution_id,
+             solution_info->lang_id,
              result_text[solution_info->result]);
 }
 
 
-void prepare_files(
-        struct SolutionInfo *solution_info,
-        char *oj_home, char *filename, int namelen, char *infile,
-        char *outfile, char *userfile, int solution_id) {
+void prepare_files(char *filename, int namelen, char *infile, char *outfile, char *userfile) {
     char fname0[BUFFER_SIZE];
     char fname[BUFFER_SIZE];
     strncpy(fname0, filename, namelen);
     fname0[namelen] = 0;
     escape(fname, fname0);
 
-    sprintf(infile, "%s/data/%d/%s.in", oj_home, solution_info->problem_id, fname);
-    execute_cmd("/bin/cp '%s' %s/run%d/data.in", infile, system_info->oj_home, solution_info->solution_id);
-    execute_cmd("/bin/cp %s/data/%d/*.dic %s/ 2> /dev/null", oj_home, solution_info->problem_id, system_info->work_dir);
-    sprintf(outfile, "%s/data/%d/%s.out", oj_home, solution_info->problem_id, fname0);
-    sprintf(userfile, "%s/run%d/user.out", oj_home, solution_id);
+    execute_cmd("/bin/cp \"%s/%d/%s.in\" %s/run%d/data.in",
+                system_info->data_path,
+                solution_info->problem_id,
+                fname,
+                system_info->oj_home,
+                solution_info->solution_id);
+
+    execute_cmd("/bin/cp \"%s/%d/*.dic\" %s/ 2> /dev/null",
+                system_info->data_path,
+                solution_info->problem_id,
+                system_info->work_dir);
+
+    sprintf(outfile, "%s/%d/%s.out", system_info->data_path, solution_info->problem_id, fname0);
+    sprintf(userfile, "%s/run%d/user.out", system_info->oj_home, solution_info->solution_id);
 }
 
-void run_solution(struct SolutionInfo *solution_info, const int *usedtime) {
+void run_solution(const int *usedtime) {
     nice(19);
     // now the user is "judger"
     chdir(system_info->work_dir);
@@ -278,11 +288,10 @@ int fix_java_mis_judge(char *work_dir, int *ACflg, int *topmemory, int mem_lmt) 
     return comp_res;
 }
 
-int special_judge(char *oj_home, int problem_id, char *infile, char *outfile,
-                  char *userfile) {
+int special_judge(char *infile, char *outfile, char *userfile) {
 
     pid_t pid;
-    log_info("pid=%d\n", problem_id);
+    log_info("pid=%d\n", solution_info->problem_id);
     pid = fork();
     int ret = 0;
     if (pid == 0) {
@@ -304,7 +313,9 @@ int special_judge(char *oj_home, int problem_id, char *infile, char *outfile,
         LIM.rlim_cur = STD_F_LIM;
         setrlimit(RLIMIT_FSIZE, &LIM);
 
-        ret = execute_cmd("%s/data/%d/spj '%s' '%s' %s", oj_home, problem_id,
+        ret = execute_cmd("%s/%d/spj '%s' '%s' %s",
+                          system_info->data_path,
+                          solution_info->problem_id,
                           infile, outfile, userfile);
         if (ret)
             exit(1);
@@ -320,46 +331,25 @@ int special_judge(char *oj_home, int problem_id, char *infile, char *outfile,
     return ret;
 }
 
-void judge_solution(struct SolutionInfo *solution_info,
-                    char *infile, char *outfile, char *userfile,
-                    int num_of_test) {
-    int comp_res;
-    if (solution_info->result == OJ_AC &&
-        solution_info->result_time > solution_info->time_lmt * 1000 * (use_max_time ? 1 : num_of_test))
-        solution_info->result = OJ_TL;
-    if (solution_info->result_memory > solution_info->mem_lmt * STD_MB)
-        solution_info->result = OJ_ML; //issues79
-// compare
-    if (solution_info->result == OJ_AC) {
-        if (solution_info->is_special_judge) {
-            comp_res = special_judge(system_info->oj_home, solution_info->problem_id, infile, outfile, userfile);
-            if (comp_res == 0)
-                comp_res = OJ_AC;
-            else {
-                comp_res = OJ_WA;
-            }
-        } else {
-            comp_res = compare(outfile, userfile);
-        }
-        if (comp_res == OJ_WA) {
-            solution_info->result = OJ_WA;
-        }
-//        solution_info->result = comp_res;
+void judge_solution(char *infile, char *outfile, char *userfile, int num_of_test) {
+    if (solution_info->result != OJ_AC) {
+        return;
     }
-//jvm popup messages, if don't consider them will get miss-WrongAnswer
-    if (solution_info->lang_id == 3) {
-        comp_res = fix_java_mis_judge(system_info->work_dir, &solution_info->result, &solution_info->result_memory,
-                                      solution_info->mem_lmt);
-    }
-    if (solution_info->lang_id == 6) {
-        comp_res = fix_python_mis_judge(system_info->work_dir, &solution_info->result, &solution_info->result_memory,
-                                        solution_info->mem_lmt);
-    }
-}
 
-void init_parameters(int argc, const char **argv, char *oj_home, int *solution_id) {
-    strcpy(oj_home, argv[1]);
-    *solution_id = atoi(argv[2]);
+    if (solution_info->result_time > solution_info->time_lmt * 1000 * (use_max_time ? 1 : num_of_test)) {
+        solution_info->result = OJ_TL;
+        return;
+    }
+    if (solution_info->result_memory > solution_info->mem_lmt * STD_MB) {
+        solution_info->result = OJ_ML;
+        return;
+    }
+
+    if (solution_info->is_special_judge) {
+        solution_info->result = special_judge(infile, outfile, userfile) == 0 ? OJ_AC : OJ_WA;
+    } else {
+        solution_info->result = compare(outfile, userfile);
+    }
 }
 
 /**
@@ -369,17 +359,9 @@ void init_parameters(int argc, const char **argv, char *oj_home, int *solution_i
  * @param argv
  * @return
  */
-int main(int argc, const char **argv) {
-    char user_id[BUFFER_SIZE];
-    char run_work_dir[BUFFER_SIZE];
-    int max_case_time = 0;
-    if (
-            argv_exist_switch(argc, argv, "--version")
-            || argv_exist_switch(argc, argv, "-version")
-            || argv_exist_switch(argc, argv, "-v")
-            || argv_exist_switch(argc, argv, "-V")
-            ) {
-        printf("justoj-core-client version: %s\n", get_version());
+int main(int argc, const char *argv[]) {
+    if (argv_exist_switch(argc, argv, "--version")) {
+        printf("%s version: %s\n", argv[0], get_version());
         return EXIT_SUCCESS;
     }
 
@@ -393,12 +375,15 @@ int main(int argc, const char **argv) {
 
     /* 创建系统信息 */
     system_info = system_info_create();
-    struct SolutionInfo *solution_info = solution_info_create();
+    solution_info = solution_info_create();
 
     /* 1. 读取命令行参数 */
-    init_parameters(argc, argv, system_info->oj_home, &solution_info->solution_id);
+    strcpy(system_info->oj_home, argv[1]);
+    solution_info->solution_id = atoi(argv[2]);
 
     sprintf(system_info->work_dir, "%s/run%d", system_info->oj_home, solution_info->solution_id);
+
+    char run_work_dir[50];
     sprintf(run_work_dir, "run%d", solution_info->solution_id);
 
     char log_file_path[1024];
@@ -408,16 +393,13 @@ int main(int argc, const char **argv) {
     log_set_quiet(false);
 
     /* 2. 读取配置文件 */
-    init_judge_conf(system_info->oj_home);
-    log_info("==> [%s] %d START", system_info->client_name, solution_info->solution_id);
+    init_judge_conf();
 
     /* 3. 初始化环境 */
     chdir(system_info->oj_home);
     execute_cmd("/bin/mkdir -p %s", run_work_dir);
     execute_cmd("chmod -R 777 run%d", solution_info->solution_id);
     chdir(system_info->work_dir);
-
-
 
     /* 4. 获取Solution信息 */
     get_solution_info(system_info, solution_info);
@@ -435,7 +417,7 @@ int main(int argc, const char **argv) {
         solution_info->result = OJ_CE;
         solution_info->result_time = 0;
         solution_info->result_memory = 0;
-        push_solution_result(solution_info);
+        push_solution_result();
         /* 清理环境 */
         chdir(system_info->oj_home);
         execute_cmd("rm -rf run%d", solution_info->solution_id);
@@ -466,13 +448,13 @@ int main(int argc, const char **argv) {
     solution_info->result = OJ_RI;
     solution_info->result_time = 0;
     solution_info->result_memory = 0;
-    push_solution_result(solution_info);
+    push_solution_result();
 
     char *data_path = malloc(sizeof(char) * (strlen(system_info->oj_home) + 255));
     char *in_file = malloc(sizeof(char) * (strlen(system_info->oj_home) + 255));
     char *out_file = malloc(sizeof(char) * (strlen(system_info->oj_home) + 255));
     char *user_file = malloc(sizeof(char) * (strlen(system_info->oj_home) + 255));
-    sprintf(data_path, "%s/data/%d", system_info->oj_home, solution_info->problem_id);
+    sprintf(data_path, "%s/%d", system_info->data_path, solution_info->problem_id);
 
     // open DIRs
     DIR *dp;
@@ -480,14 +462,13 @@ int main(int argc, const char **argv) {
 
     // using http to get remote test data files
     if (solution_info->problem_id > 0 && (dp = opendir(data_path)) == NULL) {
-        log_info("No such dir:%s!\n", data_path);
+        log_info("No such dir:%s!", data_path);
         chdir(system_info->oj_home);
         execute_cmd("rm -rf run%d", solution_info->solution_id);
         solution_info->result = OJ_RE;
         solution_info->result_time = 0;
         solution_info->result_memory = 0;
-        push_solution_result(solution_info);
-
+        push_solution_result();
         exit(-1);
     }
 
@@ -499,22 +480,21 @@ int main(int argc, const char **argv) {
 
     /* 10. 运行所有测试数据 */
     solution_info->result = OJ_AC;
+    int max_case_time = 0;
     while (solution_info->result == OJ_AC && (dirp = readdir(dp)) != NULL) {
         name_len = isInFile(dirp->d_name); // check if the file is *.in or not
         if (name_len == 0)
             continue;
-        prepare_files(
-                solution_info, system_info->oj_home, dirp->d_name, name_len, in_file, out_file,
-                user_file, solution_info->solution_id);
+        prepare_files(dirp->d_name, name_len, in_file, out_file, user_file);
 
         init_syscall_limits(solution_info);
         pid_t pidApp = fork();
         if (pidApp == 0) {
-            run_solution(solution_info, &user_time);
+            run_solution(&user_time);
         } else {
             num_of_test++;
             watch_solution(system_info, solution_info, pidApp, in_file, user_file, out_file);
-            judge_solution(solution_info, in_file, out_file, user_file, num_of_test);
+            judge_solution(in_file, out_file, user_file, num_of_test);
             if (use_max_time) {
                 max_case_time = user_time > max_case_time ? user_time : max_case_time;
                 user_time = 0;
@@ -527,7 +507,7 @@ int main(int argc, const char **argv) {
     if (solution_info->result == OJ_TL) user_time = solution_info->time_lmt * 1000;
     solution_info->result_time = user_time;
     solution_info->result_memory = top_memory >> 10;
-    push_solution_result(solution_info);
+    push_solution_result();
 
     /* 清理环境 */
     chdir(system_info->oj_home);

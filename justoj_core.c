@@ -41,10 +41,9 @@ struct SystemInfo *system_info;
 
 void call_for_exit() {
     STOP = true;
-    printf("\r\nSignal: STOPPING.\n");
     printf("Signal: STOPPING.\n");
     printf("Signal: STOPPING.\n");
-
+    printf("Signal: STOPPING.\n");
     log_info("Stopping judged...");
 }
 
@@ -52,27 +51,25 @@ void call_for_exit() {
 void init_judge_conf() {
     FILE *fp = NULL;
     char buf[BUFFER_SIZE];
-    system_info->max_running = 4;
-    system_info->sleep_time = 1;
-    strcpy(system_info->oj_lang_set, "0,1,2,3,4,5,6,7,8,9,10");
-
     char config_file_path[BUFFER_SIZE];
     sprintf(config_file_path, "%s/etc/judge.conf", system_info->oj_home);
-
     fp = fopen(config_file_path, "r");
-    if (fp != NULL) {
-        while (fgets(buf, BUFFER_SIZE - 1, fp)) {
-            read_int(buf, "OJ_RUNNING", &system_info->max_running);
-            read_int(buf, "OJ_QUERY_SIZE", &system_info->query_size);
-            read_int(buf, "OJ_SLEEP_TIME", &system_info->sleep_time);
-            read_buf(buf, "OJ_CLIENT_NAME", system_info->client_name);
-            read_buf(buf, "OJ_SECURE_CODE", system_info->secure_code);
-            read_buf(buf, "OJ_HTTP_BASE_URL", system_info->http_base_url);
-            read_buf(buf, "OJ_LANG_SET", system_info->oj_lang_set);
-            read_buf(buf, "CLIENT", system_info->client_path);
-        }
-    } else {
+
+    if (fp == NULL) {
         log_info("Config File not found!! [%s]", config_file_path);
+        exit(-1);
+    }
+
+    while (fgets(buf, BUFFER_SIZE - 1, fp)) {
+        read_int(buf, "OJ_RUNNING", &system_info->max_running);
+        read_int(buf, "OJ_QUERY_SIZE", &system_info->query_size);
+        read_int(buf, "OJ_SLEEP_TIME", &system_info->sleep_time);
+        read_buf(buf, "OJ_CLIENT_NAME", system_info->client_name);
+        read_buf(buf, "OJ_SECURE_CODE", system_info->secure_code);
+        read_buf(buf, "OJ_HTTP_BASE_URL", system_info->http_base_url);
+        read_buf(buf, "OJ_LANG_SET", system_info->oj_lang_set);
+        read_buf(buf, "CLIENT", system_info->client_path);
+        read_buf(buf, "DATA", system_info->data_path);
     }
 }
 

@@ -15,6 +15,7 @@ struct SystemInfo {
     char *oj_home; // 判题机工作基础目录，包含 etc, data 文件夹
     char *client_name; // 判题机名称
     char *client_path; // 判题机路径
+    char *data_path; // 数据路径到 data 文件夹, e.g. /justoj-data/data
     char *http_base_url; // 服务器网址
     char *secure_code; // 服务器访问安全密钥
 
@@ -44,6 +45,7 @@ struct SystemInfo *system_info_create() {
     system_info->oj_home = create_str(1024);
     system_info->client_name = create_str(1024);
     system_info->client_path = create_str(1024);
+    system_info->data_path = create_str(1024);
     system_info->http_base_url = create_str(1024);
     system_info->secure_code = create_str(1024);
     system_info->oj_lang_set = create_str(1024);
