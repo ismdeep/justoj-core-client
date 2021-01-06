@@ -23,7 +23,7 @@ char *malloc_str(size_t size) {
 void data_monitor(const struct SystemInfo *system_info) {
     char *cmd = malloc_str(1024);
     char *hash_info = malloc_str(1024);
-    sprintf(cmd, "git -C %s log -1 --pretty=format:%%H", system_info->data_path);
+    sprintf(cmd, "cd %s;git log -1 --pretty=format:%%H", system_info->data_path);
     FILE *fp1 = wget_cmd_fp(cmd);
     fscanf(fp1, "%s", hash_info);
     fclose(fp1);
