@@ -81,12 +81,12 @@ int get_pending_solutions(const struct SystemInfo *system_info, int *solution_id
     return jobs_cnt;
 }
 
-void update_solution(const struct SystemInfo *system_info,const struct SolutionInfo *solution_info) {
+void update_solution(const struct SystemInfo *system_info, const struct SolutionInfo *solution_info) {
     char ret_str[1024] = "";
-    const char *cmd ="wget "
-                     "--post-data=\"secure_code=%s&sid=%d&result=%d&time=%d&memory=%d\" "
-                     "-q -O - "
-                     "\"%s/api/judge_api/update_solution?client_name=%s&_=%"PRIu64"\"";
+    const char *cmd = "wget "
+                      "--post-data=\"secure_code=%s&sid=%d&result=%d&time=%d&memory=%d\" "
+                      "-q -O - "
+                      "\"%s/api/judge_api/update_solution?client_name=%s&_=%"PRIu64"\"";
     while (1) {
         FILE *fjobs = read_cmd_output(cmd,
                                       system_info->secure_code,
@@ -154,7 +154,7 @@ void download_source_code(const struct SystemInfo *system_info, struct SolutionI
     pclose(pout);
 }
 
-void get_solution_info(const struct SystemInfo *system_info,struct SolutionInfo *solution_info) {
+void get_solution_info(const struct SystemInfo *system_info, struct SolutionInfo *solution_info) {
     const char *cmd = "wget --post-data=\"secure_code=%s&sid=%d\" "
                       "-q -O - "
                       "\"%s/api/judge_api/get_solution_info?client_name=%s&_=%"PRIu64"\"";

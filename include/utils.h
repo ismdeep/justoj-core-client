@@ -5,6 +5,11 @@
 #ifndef JUSTOJ_CORE_UTIL_H
 #define JUSTOJ_CORE_UTIL_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
 #include <ctype.h>
 #include <stdarg.h>
 
@@ -12,6 +17,7 @@
 
 #include <defines.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #define BUFFER_SIZE 5120       //default size of char buffer 5120 bytes
 
