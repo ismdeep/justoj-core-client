@@ -57,14 +57,18 @@ include_directories("./vendor/ismdeep-c-utils/include")
 # git clone https://github.com/ismdeep/log.h.git vendor/log.h
 include_directories("./vendor/log.h/src")
 
-add_executable(justoj-core        justoj_core.c)
-add_executable(justoj-core-client justoj_core_client.c)
-
 if (NOT JUSTOJ_INSTALL_DIST)
     set(JUSTOJ_INSTALL_DIST /usr/bin)
 endif()
 
 set(CMAKE_INSTALL_PREFIX ${JUSTOJ_INSTALL_DIST})
 
+
+add_executable(justoj-core        justoj_core.c)
 install(TARGETS justoj-core DESTINATION .)
+
+add_executable(justoj-core-client justoj_core_client.c)
 install(TARGETS justoj-core-client DESTINATION .)
+
+add_executable(justoj-cpu-benchmark justoj-cpu-benchmark.c)
+install(TARGETS justoj-cpu-benchmark DESTINATION .)
