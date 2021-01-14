@@ -375,7 +375,6 @@ int main(int argc, const char *argv[]) {
 
     /* 创建系统信息 */
     system_info = system_info_create();
-    system_info->cpu_compensation = 0.6203473945409429;
     solution_info = solution_info_create();
 
     /* 1. 读取命令行参数 */
@@ -395,6 +394,12 @@ int main(int argc, const char *argv[]) {
 
     /* 2. 读取配置文件 */
     init_judge_conf();
+
+    if (system_info->cpu_compensation < 0.002) {
+        system_info->cpu_compensation = 1.0;
+    }
+
+    printf("CPU_COMPENSATION = %.3lf\n", system_info->cpu_compensation);
 
     /* 3. 初始化环境 */
     chdir(system_info->oj_home);
