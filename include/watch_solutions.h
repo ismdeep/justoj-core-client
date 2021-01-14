@@ -5,8 +5,11 @@
 #ifndef JUSTOJ_CORE_WATCH_SOLUTIONS_H
 #define JUSTOJ_CORE_WATCH_SOLUTIONS_H
 
+#include <sys/user.h>
+
 #include <system_info.h>
 #include <solution_info.h>
+
 
 int get_proc_status(int pid, const char *mark) {
     FILE *pf;
@@ -47,7 +50,8 @@ void watch_solution(
         pid_t pidApp,
         char *infile,
         char *userfile,
-        char *outfile) {
+        char *outfile,
+        int *top_memory) {
     char record_call = 0;
     /* parent */
     int tempmemory = 0;
@@ -76,9 +80,10 @@ void watch_solution(
         } else {        //other use VmPeak
             tempmemory = get_proc_status(pidApp, "VmPeak:") << 10;
         }
-        if (tempmemory > solution_info->result_memory)
-            solution_info->result_memory = tempmemory;
-        if (solution_info->result_memory > solution_info->mem_lmt * STD_MB) {
+        if (tempmemory > *top_memory) {
+            *top_memory = tempmemory;
+        }
+        if (*top_memory > solution_info->mem_lmt * STD_MB) {
             if (solution_info->result == OJ_AC)
                 solution_info->result = OJ_ML;
             ptrace(PTRACE_KILL, pidApp, NULL, NULL);
@@ -201,8 +206,15 @@ WSTOPSIG: get the signal if it was stopped by signal
         ptrace(PTRACE_SYSCALL, pidApp, NULL, NULL);
         first = false;
     }
-    solution_info->result_time += (ruse.ru_utime.tv_sec * 1000 + ruse.ru_utime.tv_usec / 1000) * system_info->cpu_compensation;
-    solution_info->result_time += (ruse.ru_stime.tv_sec * 1000 + ruse.ru_stime.tv_usec / 1000) * system_info->cpu_compensation;
+
+    int tmp_used_time = 0;
+
+    tmp_used_time += (ruse.ru_utime.tv_sec * 1000 + ruse.ru_utime.tv_usec / 1000) * system_info->cpu_compensation;
+    tmp_used_time += (ruse.ru_stime.tv_sec * 1000 + ruse.ru_stime.tv_usec / 1000) * system_info->cpu_compensation;
+
+    if (tmp_used_time > solution_info->result_time) {
+        solution_info->result_time = tmp_used_time;
+    }
 }
 
 #endif //JUSTOJ_CORE_WATCH_SOLUTIONS_H

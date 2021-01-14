@@ -8,11 +8,10 @@
 #include <stdbool.h>
 #include <string.h>
 #include <dirent.h>
+
 #include <sys/wait.h>
 #include <sys/ptrace.h>
-#include <sys/user.h>
 #include <sys/resource.h>
-#include <okcalls.h>
 
 #include <utils.h>
 #include <judge_http_api.h>
@@ -323,7 +322,6 @@ int special_judge(char *infile, char *outfile, char *userfile) {
             exit(0);
     } else {
         int status;
-
         waitpid(pid, &status, 0);
         ret = WEXITSTATUS(status);
     }
@@ -331,12 +329,12 @@ int special_judge(char *infile, char *outfile, char *userfile) {
     return ret;
 }
 
-void judge_solution(char *infile, char *outfile, char *userfile, int num_of_test) {
+void judge_solution(char *infile, char *outfile, char *userfile, int *top_memory) {
     if (solution_info->result != OJ_AC) {
         return;
     }
 
-    if (solution_info->result_time > solution_info->time_lmt * 1000 * (use_max_time ? 1 : num_of_test)) {
+    if (solution_info->result_time > solution_info->time_lmt * 1000) {
         solution_info->result = OJ_TL;
         return;
     }
@@ -375,6 +373,7 @@ int main(int argc, const char *argv[]) {
 
     /* 创建系统信息 */
     system_info = system_info_create();
+    system_info->cpu_compensation = 1.0;
     solution_info = solution_info_create();
 
     /* 1. 读取命令行参数 */
@@ -474,13 +473,14 @@ int main(int argc, const char *argv[]) {
 
     int name_len;
     int user_time = 0;
+    int used_time = 0;
     int top_memory = 0;
-    int num_of_test = 0;
 
 
     /* 10. 运行所有测试数据 */
     solution_info->result = OJ_AC;
     int max_case_time = 0;
+    solution_info->result_memory = 0;
     while (solution_info->result == OJ_AC && (dirp = readdir(dp)) != NULL) {
         name_len = isInFile(dirp->d_name); // check if the file is *.in or not
         if (name_len == 0)
@@ -492,21 +492,23 @@ int main(int argc, const char *argv[]) {
         if (pidApp == 0) {
             run_solution(&user_time);
         } else {
-            num_of_test++;
-            watch_solution(system_info, solution_info, pidApp, in_file, user_file, out_file);
-            judge_solution(in_file, out_file, user_file, num_of_test);
+            watch_solution(system_info, solution_info, pidApp, in_file, user_file, out_file, &top_memory);
+            judge_solution(in_file, out_file, user_file, &top_memory);
             if (use_max_time) {
                 max_case_time = user_time > max_case_time ? user_time : max_case_time;
                 user_time = 0;
+            }
+            if (top_memory > solution_info->result_memory) {
+                solution_info->result_memory = top_memory;
             }
         }
     }
 
     /* 11. 上传测试结果 */
-    if (use_max_time) user_time = max_case_time;
-    if (solution_info->result == OJ_TL) user_time = solution_info->time_lmt * 1000;
-    solution_info->result_time = user_time;
-    solution_info->result_memory = top_memory >> 10;
+    if (solution_info->result == OJ_TL) {
+        solution_info->result_time = solution_info->time_lmt * 1000;
+    }
+    solution_info->result_memory = solution_info->result_memory >> 10;
     push_solution_result();
 
     /* 清理环境 */

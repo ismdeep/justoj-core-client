@@ -11,7 +11,7 @@ apt-get install -y \
     make cmake \
     zlibc zlib1g-dev \
     iptables \
-    openjdk-8-jdk \
+    openjdk-11-jdk \
     fp-compiler \
     sbcl clisp guile-2.2 \
     golang
