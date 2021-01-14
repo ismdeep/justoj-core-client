@@ -33,7 +33,7 @@ int main() {
 
     printf("Time elapse avg: %"PRIu64" (ms)\n", avg_time);
 
-    printf("AUG Rate: %.3lf\n", avg_time / 1000.00);
+    printf("AUG Rate: %.3lf\n", 1000.00 / avg_time);
 
     return EXIT_SUCCESS;
 }
