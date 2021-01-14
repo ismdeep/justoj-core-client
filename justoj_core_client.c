@@ -80,11 +80,13 @@ void init_judge_conf() {
 
 void push_solution_result() {
     update_solution(system_info, solution_info);
-    log_info("==> [%s] %d [LANG:%d] %s",
+    log_info("==> [%s] %d [LANG:%d] %s   %d (ms)    %d KB",
              system_info->client_name,
              solution_info->solution_id,
              solution_info->lang_id,
-             result_text[solution_info->result]);
+             result_text[solution_info->result],
+             solution_info->result_time,
+             solution_info->result_memory);
 }
 
 
