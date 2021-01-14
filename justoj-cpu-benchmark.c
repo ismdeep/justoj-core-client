@@ -5,10 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <ismdeep-c-utils/time.h>
 
-#define MAXN 378871794ULL
+#define MAXN 500000000ULL
 
 int main() {
 
@@ -23,17 +24,16 @@ int main() {
         }
 
         uint64_t end_time_ms = time_ms();
-        printf("Time elapse: %llu (ms)\n", end_time_ms - start_time_ms);
+        printf("Time elapse: %"PRIu64" (ms)\n", end_time_ms - start_time_ms);
         total_time += end_time_ms - start_time_ms;
         SLEEP_S(1);
     }
 
     uint64_t avg_time = total_time / 10;
 
-    printf("Time elapse avg: %llu (ms)\n", avg_time);
+    printf("Time elapse avg: %"PRIu64" (ms)\n", avg_time);
 
     printf("AUG Rate: %.3lf\n", avg_time / 1000.00);
-
 
     return EXIT_SUCCESS;
 }
