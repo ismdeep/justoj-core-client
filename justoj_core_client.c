@@ -373,7 +373,7 @@ int main(int argc, const char *argv[]) {
 
     /* 创建系统信息 */
     system_info = system_info_create();
-    system_info->cpu_compensation = 1.261;
+    system_info->cpu_compensation = 1.612;
     solution_info = solution_info_create();
 
     /* 1. 读取命令行参数 */
