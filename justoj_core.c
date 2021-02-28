@@ -256,7 +256,7 @@ int main(int argc, const char *argv[]) {
         return -1;
     }
 
-    if (argv_exist_switch(argc, argv, "--version")) {
+    if (argv_switch_exist(argc, argv, "--version")) {
         printf("justoj-core        version: %s\n", get_version());
         return EXIT_SUCCESS;
     }
@@ -273,7 +273,7 @@ int main(int argc, const char *argv[]) {
 
     /* Determine if it is running under daemon mode. */
     bool daemon_flag = false;
-    if (argv_exist_switch(argc, argv, "-d")) {
+    if (argv_switch_exist(argc, argv, "-d")) {
         daemon_flag = true;
     }
     if (daemon_flag) {
