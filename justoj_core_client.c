@@ -360,7 +360,7 @@ void judge_solution(char *infile, char *outfile, char *userfile, int *top_memory
  * @return
  */
 int main(int argc, const char *argv[]) {
-    if (argv_exist_switch(argc, argv, "--version")) {
+    if (argv_switch_exist(argc, argv, "--version")) {
         printf("%s version: %s\n", argv[0], get_version());
         return EXIT_SUCCESS;
     }
