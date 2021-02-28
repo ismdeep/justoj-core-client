@@ -127,7 +127,7 @@ void upload_ce_info(const struct SystemInfo *system_info, struct SolutionInfo *s
     char ret_str[1024] = "";
     const char *cmd = "wget --post-file=\"ce.post\" "
                       "-q -O - "
-                      "\"%s/api/judge_api/add_ce_info?client_name=%s&_=%"PRIu64"\"";
+                      "\"%s/api/judge_api/add_ce_info?client_name=%s&_=%" PRIu64 "\"";
     FILE *fjobs = read_cmd_output(cmd,
                                   system_info->http_base_url,
                                   system_info->client_name,

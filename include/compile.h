@@ -42,7 +42,7 @@ int compile(const struct SystemInfo *system_info, int lang) {
     for (int i = 0; i < 7; i++)
         CP_JAVA[i] = javac_buf[i];
 
-    sprintf(CP_JAVA[0], "javac");
+    sprintf(CP_JAVA[0], "/usr/bin/javac");
     sprintf(CP_JAVA[1], "-J%s", system_info->java_xms);
     sprintf(CP_JAVA[2], "-J%s", system_info->java_xmx);
     sprintf(CP_JAVA[3], "-encoding");
@@ -53,24 +53,26 @@ int compile(const struct SystemInfo *system_info, int lang) {
     pid = fork();
     if (pid == 0) {
         struct rlimit LIM;
-        int cpu = 6;
+        int cpu = 20;
         if (lang == 3) cpu = 30;
         LIM.rlim_max = cpu;
         LIM.rlim_cur = cpu;
         setrlimit(RLIMIT_CPU, &LIM);
         alarm(cpu);
-        LIM.rlim_max = 40 * STD_MB;
-        LIM.rlim_cur = 40 * STD_MB;
+        LIM.rlim_max = 100 * STD_MB;
+        LIM.rlim_cur = 100 * STD_MB;
         setrlimit(RLIMIT_FSIZE, &LIM);
 
         if (lang == 3 || lang == 17) {
             LIM.rlim_max = STD_MB << 12;
             LIM.rlim_cur = STD_MB << 12;
         } else {
-            LIM.rlim_max = STD_MB * 512;
-            LIM.rlim_cur = STD_MB * 512;
+            LIM.rlim_max = STD_MB << 11;
+            LIM.rlim_cur = STD_MB << 11;
         }
-        if (lang != 3)setrlimit(RLIMIT_AS, &LIM);
+        if (lang != 3) {
+            setrlimit(RLIMIT_AS, &LIM);
+        }
         if (lang != 2 && lang != 11) {
             freopen("ce.txt", "w", stderr);
             //freopen("/dev/null", "w", stdout);
