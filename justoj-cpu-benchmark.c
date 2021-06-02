@@ -4,18 +4,27 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <inttypes.h>
 
 #include <ismdeep-c-utils/time.h>
 
 #define MAX_N 500000000ULL
 
+#define TOTAL_CNT 20
+#define REMOVE_SIZE 5
+
+
+int64_t cmpfunc(const void *a, const void *b) {
+    return (*(int64_t *) a - *(int64_t *) b);
+}
+
 int main() {
 
     uint64_t total_time = 0ULL;
 
-    for (size_t test_id = 0; test_id < 10; ++test_id) {
+    uint64_t time_elapse[TOTAL_CNT];
+
+    for (size_t test_id = 0; test_id < TOTAL_CNT; ++test_id) {
         uint64_t start_time_ms = time_ms();
 
         uint64_t sum = 0;
@@ -24,11 +33,20 @@ int main() {
         }
 
         uint64_t end_time_ms = time_ms();
-        total_time += end_time_ms - start_time_ms;
-        SLEEP_S(1);
+        time_elapse[test_id] = end_time_ms - start_time_ms;
+        SLEEP_MS(100);
     }
 
-    uint64_t avg_time = total_time / 10;
+    qsort(time_elapse, TOTAL_CNT, sizeof(uint64_t), (int (*)(const void *, const void *)) cmpfunc);
+
+    int size = 0;
+    for (size_t test_id = REMOVE_SIZE; test_id < TOTAL_CNT - REMOVE_SIZE; ++test_id) {
+        total_time += time_elapse[test_id];
+        ++size;
+    }
+
+
+    uint64_t avg_time = total_time / size;
 
 
     printf("%.3lf\n", 1000.00 / (double) avg_time);
