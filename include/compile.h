@@ -8,6 +8,4 @@
 #include <solution_info.h>
 #include <defines.h>
 
-
-
 #endif //JUSTOJ_CORE_COMPILE_H
