@@ -6,55 +6,46 @@
 #define JUSTOJ_CORE_WATCH_SOLUTIONS_H
 
 #include <sys/user.h>
-
-#include <system_info.h>
+#include <sys/ptrace.h>
 #include <solution_info.h>
 
-
 int get_proc_status(int pid, const char *mark) {
-    FILE *pf;
     char fn[BUFFER_SIZE], buf[BUFFER_SIZE];
     int ret = 0;
     sprintf(fn, "/proc/%d/status", pid);
-    pf = fopen(fn, "re");
+    FILE *fp = fopen(fn, "re");
     int m = strlen(mark);
-    while (pf && fgets(buf, BUFFER_SIZE - 1, pf)) {
+    if (!fp) {
+        return 0;
+    }
+    while (fgets(buf, BUFFER_SIZE - 1, fp)) {
         buf[strlen(buf) - 1] = 0;
         if (strncmp(buf, mark, m) == 0) {
             sscanf(buf + m + 1, "%d", &ret);
         }
     }
-    if (pf)
-        fclose(pf);
+    fclose(fp);
     return ret;
 }
 
-void print_runtimeerror(char *err) {
+void print_runtime_error(char *err) {
     log_info("Runtime Error: %s", err);
 }
 
 
-int get_page_fault_mem(struct rusage *ruse, const pid_t *pidApp) {
+int get_page_fault_mem(struct rusage *ruse, const pid_t pid) {
     /* java use pagefault */
     int m_vmpeak, m_vmdata, m_minflt;
     m_minflt = (int) ruse->ru_minflt * getpagesize();
-    m_vmpeak = get_proc_status(*pidApp, "VmPeak:");
-    m_vmdata = get_proc_status(*pidApp, "VmData:");
-    // printf("VmPeak:%d KB VmData:%d KB minflt:%d KB\n", m_vmpeak, m_vmdata, m_minflt >> 10);
+    m_vmpeak = get_proc_status(pid, "VmPeak:");
+    m_vmdata = get_proc_status(pid, "VmData:");
+    printf("VmPeak:%d KB VmData:%d KB minflt:%d KB\n", m_vmpeak, m_vmdata, m_minflt >> 10);
     return m_minflt;
 }
 
-void watch_solution(
-        const struct SystemInfo *system_info,
-        struct SolutionInfo *solution_info,
-        pid_t pidApp,
-        char *infile,
-        char *userfile,
-        char *outfile,
-        int *top_memory) {
+void watch_solution(struct SolutionInfo *solution_info, pid_t pid) {
     char record_call = 0;
     /* parent */
-    int tempmemory = 0;
 
     int status, sig, exitcode;
     struct user_regs_struct reg;
@@ -62,31 +53,28 @@ void watch_solution(
     int first = true;
     while (1) {
         /* check the usage */
-        wait4(pidApp, &status, __WALL, &ruse);
+        wait4(pid, &status, __WALL, &ruse);
         if (first) { //
-            ptrace(PTRACE_SETOPTIONS, pidApp, NULL, PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACEEXIT);
+            ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACEEXIT);
         }
 
-        //jvm gc ask VM before need,so used kernel page fault times and page size
-        if (
-                solution_info->lang_id == 3
-                || solution_info->lang_id == 7
-                || solution_info->lang_id == 9
-                || solution_info->lang_id == 13
-                || solution_info->lang_id == 14
-                || solution_info->lang_id == 16
-                || solution_info->lang_id == 17) {
-            tempmemory = get_page_fault_mem(&ruse, &pidApp);
+        // jvm gc ask VM before need,so used kernel page fault times and page size
+        if (solution_info->lang_id == 3
+            || solution_info->lang_id == 7
+            || solution_info->lang_id == 9
+            || solution_info->lang_id == 13
+            || solution_info->lang_id == 14
+            || solution_info->lang_id == 16
+            || solution_info->lang_id == 17) {
+            solution_info->result_memory = get_page_fault_mem(&ruse, pid);
         } else {        //other use VmPeak
-            tempmemory = get_proc_status(pidApp, "VmPeak:") << 10;
+            solution_info->result_memory = get_proc_status(pid, "VmPeak:") << 10;
         }
-        if (tempmemory > *top_memory) {
-            *top_memory = tempmemory;
-        }
-        if (*top_memory > solution_info->mem_lmt * STD_MB) {
+
+        if (solution_info->result_memory > solution_info->mem_lmt * STD_MB) {
             if (solution_info->result == OJ_AC)
                 solution_info->result = OJ_ML;
-            ptrace(PTRACE_KILL, pidApp, NULL, NULL);
+            ptrace(PTRACE_KILL, pid, NULL, NULL);
             break;
         }
         /* sig = status >> 8; status >> 8 EXITCODE */
@@ -95,13 +83,7 @@ void watch_solution(
         if ((solution_info->lang_id < 4 || solution_info->lang_id == 9) && get_file_size("error.out")) {
             solution_info->result = OJ_RE;
             /* addreinfo(solution_id); */
-            ptrace(PTRACE_KILL, pidApp, NULL, NULL);
-            break;
-        }
-
-        if (!solution_info->is_special_judge && get_file_size(userfile) > get_file_size(outfile) * 2 + 1024) {
-//            solution_info->result = OJ_OL;
-            ptrace(PTRACE_KILL, pidApp, NULL, NULL);
+            ptrace(PTRACE_KILL, pid, NULL, NULL);
             break;
         }
 
@@ -134,9 +116,9 @@ void watch_solution(
                         solution_info->result = OJ_RE;
                 }
 
-                print_runtimeerror(strsignal(exitcode));
+                print_runtime_error(strsignal(exitcode));
             }
-            ptrace(PTRACE_KILL, pidApp, NULL, NULL);
+            ptrace(PTRACE_KILL, pid, NULL, NULL);
 
             break;
         }
@@ -168,7 +150,7 @@ void watch_solution(
                         solution_info->result = OJ_RE;
                 }
 
-                print_runtimeerror(strsignal(sig));
+                print_runtime_error(strsignal(sig));
 
             }
             break;
@@ -180,7 +162,7 @@ WSTOPSIG: get the signal if it was stopped by signal
  */
 
 // check the system calls
-        ptrace(PTRACE_GETREGS, pidApp, NULL, &reg);
+        ptrace(PTRACE_GETREGS, pid, NULL, &reg);
         solution_info->call_id = (unsigned int) reg.REG_SYSCALL % CALL_ARRAY_SIZE;
         if (solution_info->call_counter[solution_info->call_id]) {
 //call_counter[reg.REG_SYSCALL]--;
@@ -190,31 +172,29 @@ WSTOPSIG: get the signal if it was stopped by signal
             solution_info->result = OJ_RE;
             char error[BUFFER_SIZE];
             sprintf(error,
-                    "[ERROR] A Not allowed system call: runid:%d CALLID:%u\n"
-                    " TO FIX THIS , ask admin to add the CALLID into corresponding LANG_XXV[] located at okcalls32/64.h ,\n"
+                    "[ERROR] A Not allowed system call [CALL_ID: %u]\n"
+                    " TO FIX THIS , ask admin to add the CALL_ID into corresponding LANG_XXV[] located at okcalls32/64.h ,\n"
                     "and recompile justoj_core_client. \n"
                     "if you are admin and you don't know what to do ,\n"
                     "chinese explaination can be found on https://zhuanlan.zhihu.com/p/24498599\n",
-                    solution_info->solution_id, solution_info->call_id);
+                    solution_info->call_id);
 
             // printf("%s", error);
-            print_runtimeerror(error);
-            ptrace(PTRACE_KILL, pidApp, NULL, NULL);
+            print_runtime_error(error);
+            ptrace(PTRACE_KILL, pid, NULL, NULL);
         }
 
 
-        ptrace(PTRACE_SYSCALL, pidApp, NULL, NULL);
+        ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
         first = false;
     }
 
     int tmp_used_time = 0;
 
-    tmp_used_time += (ruse.ru_utime.tv_sec * 1000 + ruse.ru_utime.tv_usec / 1000) * system_info->cpu_compensation;
-    tmp_used_time += (ruse.ru_stime.tv_sec * 1000 + ruse.ru_stime.tv_usec / 1000) * system_info->cpu_compensation;
+    tmp_used_time += (ruse.ru_utime.tv_sec * 1000 + ruse.ru_utime.tv_usec / 1000) * solution_info->cpu_compensation;
+    tmp_used_time += (ruse.ru_stime.tv_sec * 1000 + ruse.ru_stime.tv_usec / 1000) * solution_info->cpu_compensation;
 
-    if (tmp_used_time > solution_info->result_time) {
-        solution_info->result_time = tmp_used_time;
-    }
+    solution_info->result_time = tmp_used_time;
 }
 
 #endif //JUSTOJ_CORE_WATCH_SOLUTIONS_H

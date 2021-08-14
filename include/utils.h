@@ -71,6 +71,21 @@ int isInFile(const char fname[]) {
         return l - 3;
 }
 
+#include <str_utils.h>
+
+char * get_in_file_name(const char *file_name) {
+    int l = strlen(file_name);
+    if (l <= 3 || strcmp(file_name + l - 3, ".in") != 0) {
+        return "";
+    }
+
+    char *result = create_str(1024);
+    memset(result, 0, sizeof(char) * 1024);
+    strcpy(result, file_name);
+    result[l - 3] = '\0';
+    return result;
+}
+
 int after_equal(const char *c) {
     int i = 0;
     for (; c[i] != '\0' && c[i] != '='; i++);

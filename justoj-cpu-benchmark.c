@@ -14,7 +14,7 @@
 #define REMOVE_SIZE 5
 
 
-int64_t cmpfunc(const void *a, const void *b) {
+int64_t cmp_func(const void *a, const void *b) {
     return (*(int64_t *) a - *(int64_t *) b);
 }
 
@@ -37,7 +37,7 @@ int main() {
         SLEEP_MS(100);
     }
 
-    qsort(time_elapse, TOTAL_CNT, sizeof(uint64_t), (int (*)(const void *, const void *)) cmpfunc);
+    qsort(time_elapse, TOTAL_CNT, sizeof(uint64_t), (int (*)(const void *, const void *)) cmp_func);
 
     int size = 0;
     for (size_t test_id = REMOVE_SIZE; test_id < TOTAL_CNT - REMOVE_SIZE; ++test_id) {

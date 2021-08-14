@@ -41,6 +41,11 @@
 #define OJ_CO 12
 #define OJ_TR 13
 
+static char lang_ext[20][8] = {
+        "c", "cc", "pas", "java", "rb",
+        "sh", "py", "php", "pl", "cs",
+        "m", "bas", "scm", "c", "cc",
+        "lua", "js", "go", "py", "cl"};
 
 #define STD_MB 1048576LL
 #define STD_T_LIM 2
@@ -53,5 +58,6 @@
 #define REG_RET rax
 #define REG_ARG0 rdi
 #define REG_ARG1 rsi
+
 
 #endif //JUSTOJ_CORE_CLIENT_DEFINES_H

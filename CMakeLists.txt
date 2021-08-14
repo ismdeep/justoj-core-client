@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(justoj-core C)
+project(justoj-core-client C)
 
 set(BRANCH_NAME "")
 set(RELEASE_DATE "")
@@ -64,10 +64,7 @@ endif()
 set(CMAKE_INSTALL_PREFIX ${JUSTOJ_INSTALL_DIST})
 
 
-add_executable(justoj-core        justoj_core.c)
-install(TARGETS justoj-core DESTINATION .)
-
-add_executable(justoj-core-client justoj_core_client.c)
+add_executable(justoj-core-client client.c)
 install(TARGETS justoj-core-client DESTINATION .)
 
 add_executable(justoj-cpu-benchmark justoj-cpu-benchmark.c)
