@@ -21,7 +21,7 @@
 const char *solution_path;
 
 char java_xms[50] = "-Xms32m";
-const char *java_xmx = "-Xmx256m";
+char java_xmx[50] = "-Xmx256m";
 static int java_time_bonus = 5;
 static int java_memory_bonus = 512;
 char run_dir[1024];
@@ -52,7 +52,7 @@ void init_data() {
         }
         fclose(fp);
     } else {
-        log_info("FILE NOT FOUND. [%s]", config_file_path);
+        printf("FILE NOT FOUND. [%s]", config_file_path);
         exit(-1);
     }
 
@@ -87,6 +87,7 @@ void init_data() {
     }
 
     sprintf(java_xms, "-Xms%dm", solution_info->mem_lmt);
+    sprintf(java_xms, "-Xmx%dm", solution_info->mem_lmt * 2);
 
     // 准备数据
     execute_cmd("rm       -rf       %s/run/", solution_path);
@@ -176,7 +177,7 @@ void run_solution() {
             execl("./Main", "./Main", NULL);
             break;
         case LANG_JAVA:
-            execl("java", "java", java_xms, java_xmx,
+            execl("/usr/bin/java", "/usr/bin/java", java_xms, java_xmx,
                   "-Djava.security.manager",
                   "-Djava.security.policy=./java.policy",
                   "Main", NULL);
@@ -211,7 +212,7 @@ void run_solution() {
             execl("/lua", "/lua", "Main", NULL);
             break;
         case LANG_JAVASCRIPT:
-            execl("/nodejs", "/nodejs", "Main.js", NULL);
+            execl("/usr/bin/node", "/usr/bin/node", "Main.js", NULL);
             break;
         case LANG_PYTHON3:
             execl(solution_info->python3_path, solution_info->python3_path, "Main.py", NULL);
@@ -300,7 +301,7 @@ bool compile() {
     compile_cmd[LANG_FREE_BASIC] = "fbc -lang qb Main.bas";
     compile_cmd[LANG_C_SHARP] = "gmcs -warn:0 Main.cs";
     compile_cmd[LANG_LUA] = "luac -o Main Main.lua";
-    compile_cmd[LANG_JAVASCRIPT] = "js24 -c Main.js";
+    compile_cmd[LANG_JAVASCRIPT] = "node -c Main.js";
     compile_cmd[LANG_OBJC] = "gcc -o Main Main.m -fconstant-string-class=NSConstantString -I /usr/include/GNUstep/ -L /usr/lib/GNUstep/Libraries/ -lobjc -lgnustep-base";
     compile_cmd[LANG_PHP] = "php -l Main.php";
     compile_cmd[LANG_PERL] = "perl -c Main.pl";
@@ -323,7 +324,7 @@ bool compile() {
         waitpid(pid, &status, 0);
         char file_path[1024];
         sprintf(file_path, "%s/run/ce.txt", solution_path);
-        int size = get_file_size(file_path);
+        size_t size = get_file_size(file_path);
         if (size > 4) {
             return false;
         }
@@ -387,9 +388,7 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        int user_time = 0;
-
-        execute_cmd("cp    %s/run/data/%s.in     %s/run/data.in",  solution_path, file_name, solution_path);
+        execute_cmd("cp    %s/run/data/%s.in     %s/run/data.in", solution_path, file_name, solution_path);
         execute_cmd("cp    %s/run/data/%s.out    %s/run/data.out", solution_path, file_name, solution_path);
         init_syscall_limits(solution_info);
         pid_t pid = fork();
@@ -401,11 +400,12 @@ int main(int argc, const char *argv[]) {
 
             // 记录运行结果
             if (!first_result) {
-                fprintf(result_file, ",");
+                fprintf(result_file, ",\n");
             }
             first_result = false;
             execute_cmd("echo test >> %s/run/results.txt", solution_path);
-            fprintf(result_file, "{\"name\": \"%s\", \"result\": %d, \"time\": %d, \"mem\": %d}", file_name, solution_info->result, solution_info->result_time, solution_info->result_memory);
+            fprintf(result_file, "{\"name\": \"%s\", \"result\": %d, \"time\": %d, \"mem\": %d}", file_name,
+                    solution_info->result, solution_info->result_time, solution_info->result_memory);
         }
     }
     fprintf(result_file, "]");

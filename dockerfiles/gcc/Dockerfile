@@ -2,8 +2,8 @@ FROM ubuntu:18.04
 
 MAINTAINER L. Jiang <l.jiang.1024@gmail.com>
 
-RUN apt update
-RUN apt install -y openssh-server supervisor gcc g++ make cmake git rsync gdb
+ADD install-tools.sh /
+RUN bash /install-tools.sh
 RUN mkdir -p /var/run/sshd /var/log/supervisor
 RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 COPY authorized_keys /root/.ssh/authorized_keys

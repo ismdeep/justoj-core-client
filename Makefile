@@ -9,17 +9,17 @@ download-vendor:
 
 build-gcc-image:
 	docker build -t ismdeep/ubuntu-gcc:$(DATE_TAG) -f ./dockerfiles/gcc/Dockerfile .
-	docker push     ismdeep/ubuntu-gcc:$(DATE_TAG)
+	#docker push     ismdeep/ubuntu-gcc:$(DATE_TAG)
 	docker tag      ismdeep/ubuntu-gcc:$(DATE_TAG) ismdeep/ubuntu-gcc:latest
-	docker push     ismdeep/ubuntu-gcc:latest
-	docker rmi      ismdeep/ubuntu-gcc:$(DATE_TAG)
-	docker rmi      ismdeep/ubuntu-gcc:latest
+	#docker push     ismdeep/ubuntu-gcc:latest
+	#docker rmi      ismdeep/ubuntu-gcc:$(DATE_TAG)
+	#docker rmi      ismdeep/ubuntu-gcc:latest
 
 create:
 	-docker stop justoj-core-gcc
 	-docker rm   justoj-core-gcc
 	docker run --name justoj-core-gcc \
-		-v $(CURDIR)/solution-fedebb89b607ace4:/solution \
+		-v $(CURDIR)/solutions:/solutions \
 		-p 2222:22 -d ismdeep/ubuntu-gcc:latest
 
 clean:

@@ -1,0 +1,47 @@
+import java.io.OutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.util.Scanner;
+
+/**
+ * Built using CHelper plug-in
+ * Actual solution is at the top
+ *
+ * @author ismdeep
+ */
+public class Main {
+    public static void main(String[] args) {
+        InputStream inputStream = System.in;
+        OutputStream outputStream = System.out;
+        Scanner in = new Scanner(inputStream);
+        PrintWriter out = new PrintWriter(outputStream);
+        JustOJ2405 solver = new JustOJ2405();
+        solver.solve(1, in, out);
+        out.close();
+    }
+
+    static class JustOJ2405 {
+        static public long __gcd__(long a, long b) {
+            long tmp;
+            while (b != 0) {
+                tmp = a % b;
+                a = b;
+                b = tmp;
+            }
+            return a;
+        }
+
+        public void solve(int testNumber, Scanner in, PrintWriter out) {
+            int n = in.nextInt();
+            long val = Math.abs(in.nextLong());
+            long tmp;
+            for (int i = 1; i < n; ++i) {
+                tmp = Math.abs(in.nextLong());
+                val = __gcd__(val, tmp);
+            }
+            out.write(String.format("%d\n", val));
+        }
+
+    }
+}

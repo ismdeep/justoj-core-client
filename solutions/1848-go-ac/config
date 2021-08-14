@@ -1,0 +1,9 @@
+LANGUAGE=17
+SPECIAL_JUDGE=0
+CPU_COMPENSATION=0.845
+TIME_LIMIT=1
+MEMORY_LIMIT=128
+PYTHON2=/usr/local/python2/bin/python2.7
+PYTHON3=/usr/local/python3/bin/python3.7
+GUILE=/usr/bin/guile
+SBCL=/usr/bin/sbcl
