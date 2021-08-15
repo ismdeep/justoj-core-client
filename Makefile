@@ -4,6 +4,7 @@ help:
 	@echo JustOJ Core & JustOJ Core Client
 
 download-vendor:
+	-rm -rfv vendor
 	git clone https://github.com/ismdeep/ismdeep-c-utils.git vendor/ismdeep-c-utils
 	git clone https://github.com/ismdeep/log.h.git           vendor/log.h
 
