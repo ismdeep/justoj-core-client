@@ -2,7 +2,9 @@ FROM ubuntu:18.04
 
 MAINTAINER L. Jiang <l.jiang.1024@gmail.com>
 
-ADD install-tools.sh /
+ENV DEBIAN_FRONTEND=noninteractive
+ADD dockerfiles/gcc/install-tools.sh /
+ADD dockerfiles/gcc/Env /
 RUN bash /install-tools.sh
 RUN mkdir -p /var/run/sshd /var/log/supervisor
 RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config

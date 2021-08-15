@@ -27,6 +27,7 @@ static int java_memory_bonus = 512;
 char run_dir[1024];
 char run_data_dir[1024];
 struct SolutionInfo *solution_info;
+struct Env *env;
 
 /* Read Judge config */
 void init_data() {
@@ -34,6 +35,8 @@ void init_data() {
     sprintf(run_data_dir, "%s/run/data", solution_path);
 
     solution_info = solution_info_create();
+    env = env_create();
+
     FILE *fp = NULL;
     char config_file_path[BUFFER_SIZE];
     char buf[BUFFER_SIZE];
@@ -45,14 +48,36 @@ void init_data() {
             read_double(buf, "CPU_COMPENSATION", &solution_info->cpu_compensation);
             read_int(buf, "TIME_LIMIT", &solution_info->time_lmt);
             read_int(buf, "MEMORY_LIMIT", &solution_info->mem_lmt);
-            read_buf(buf, "PYTHON2", solution_info->python2_path);
-            read_buf(buf, "PYTHON3", solution_info->python3_path);
-            read_buf(buf, "GUILE", solution_info->guile_path);
-            read_buf(buf, "SBCL", solution_info->sbcl_path);
         }
         fclose(fp);
     } else {
         printf("FILE NOT FOUND. [%s]", config_file_path);
+        exit(-1);
+    }
+
+    FILE *env_fp = fopen("/Env", "re");
+    if (env_fp != NULL) {
+        while (fgets(buf, BUFFER_SIZE - 1, env_fp)) {
+            read_buf(buf, "PYTHON2=", env->PYTHON2);
+            read_buf(buf, "PYTHON3=", env->PYTHON3);
+            read_buf(buf, "GUILE=", env->GUILE);
+            read_buf(buf, "SBCL=", env->SBCL);
+            read_buf(buf, "JAVA=", env->JAVA);
+            read_buf(buf, "JAVAC=", env->JAVAC);
+            read_buf(buf, "NODE=", env->NODE);
+            read_buf(buf, "GO=", env->GO);
+            read_buf(buf, "PHP=", env->PHP);
+            read_buf(buf, "PERL=", env->PERL);
+            read_buf(buf, "LUA=", env->LUA);
+            read_buf(buf, "LUAC=", env->LUAC);
+            read_buf(buf, "FPC=", env->FPC);
+            read_buf(buf, "RUBY=", env->RUBY);
+            read_buf(buf, "MCS=", env->MCS);
+            read_buf(buf, "MONO=", env->MONO);
+        }
+        fclose(env_fp);
+    } else {
+        printf("FILE NOT FOUND. [/Env]");
         exit(-1);
     }
 
@@ -87,7 +112,7 @@ void init_data() {
     }
 
     sprintf(java_xms, "-Xms%dm", solution_info->mem_lmt);
-    sprintf(java_xms, "-Xmx%dm", solution_info->mem_lmt * 2);
+    sprintf(java_xmx, "-Xmx%dm", solution_info->mem_lmt * 2);
 
     // 准备数据
     execute_cmd("rm       -rf       %s/run/", solution_path);
@@ -177,45 +202,45 @@ void run_solution() {
             execl("./Main", "./Main", NULL);
             break;
         case LANG_JAVA:
-            execl("/usr/bin/java", "/usr/bin/java", java_xms, java_xmx,
+            execl(env->JAVA, env->JAVA, java_xms, java_xmx,
                   "-Djava.security.manager",
                   "-Djava.security.policy=./java.policy",
                   "Main", NULL);
             break;
         case LANG_RUBY:
-            execl("/ruby", "/ruby", "Main.rb", NULL);
+            execl(env->RUBY, env->RUBY, "Main.rb", NULL);
             break;
         case LANG_BASH:
             execl("/bin/bash", "/bin/bash", "Main.sh", NULL);
             break;
         case LANG_PYTHON2:
-            execl(solution_info->python2_path, solution_info->python2_path,
+            execl(env->PYTHON2, env->PYTHON2,
                   "Main.py",
                   NULL);
             break;
         case LANG_PHP:
-            execl("/php", "/php", "Main.php", NULL);
+            execl(env->PHP, env->PHP, "Main.php", NULL);
             break;
         case LANG_PERL:
-            execl("/usr/bin/perl", "/usr/bin/perl", "Main.pl", NULL);
+            execl(env->PERL, env->PERL, "Main.pl", NULL);
             break;
         case LANG_C_SHARP:
-            execl("/mono", "/mono", "--debug", "Main.exe", NULL);
+            execl(env->MONO, env->MONO, "--debug", "Main.exe", NULL);
             break;
         case LANG_SCHEME:
-            execl(solution_info->guile_path, solution_info->guile_path, "Main.scm", NULL);
+            execl(env->GUILE, env->GUILE, "Main.scm", NULL);
             break;
         case LANG_SBCL:
-            execl(solution_info->sbcl_path, solution_info->sbcl_path, "--script", "Main.cl", NULL);
+            execl(env->SBCL, env->SBCL, "--script", "Main.cl", NULL);
             break;
         case LANG_LUA:
-            execl("/lua", "/lua", "Main", NULL);
+            execl(env->LUA, env->LUA, "Main", NULL);
             break;
         case LANG_JAVASCRIPT:
-            execl("/usr/bin/node", "/usr/bin/node", "Main.js", NULL);
+            execl(env->NODE, env->NODE, "Main.js", NULL);
             break;
         case LANG_PYTHON3:
-            execl(solution_info->python3_path, solution_info->python3_path, "Main.py", NULL);
+            execl(env->PYTHON3, env->PYTHON3, "Main.py", NULL);
             break;
     }
     fflush(stderr);
@@ -286,25 +311,30 @@ void judge_solution() {
 
 bool compile() {
     char *compile_cmd[100];
+    for (int i = 0; i < 100; ++i) {
+        compile_cmd[i] = create_str(1024);
+    }
+
     compile_cmd[LANG_C] = "gcc Main.c  -o Main -O2          -w -fmax-errors=10 -lm --static -std=c99   -DONLINE_JUDGE";
     compile_cmd[LANG_CXX] = "g++ Main.cc -o Main -O2 -fno-asm -w -fmax-errors=10 -lm --static -std=c++11 -DONLINE_JUDGE";
-    compile_cmd[LANG_PASCAL] = "fpc Main.pas -Cs32000000 -Sh -O2 -Co -Ct -Ci";
-    compile_cmd[LANG_JAVA] = "javac -encoding UTF-8 Main.java";
-    compile_cmd[LANG_RUBY] = "ruby -c Main.rb";
+    sprintf(compile_cmd[LANG_PASCAL], "%s Main.pas -Cs32000000 -Sh -O2 -Co -Ct -Ci", env->FPC);
+    sprintf(compile_cmd[LANG_JAVA], "%s -encoding UTF-8 Main.java", env->JAVAC);
+    sprintf(compile_cmd[LANG_RUBY], "%s -c Main.rb", env->RUBY);
     compile_cmd[LANG_BASH] = "chmod +rx Main.sh";
     compile_cmd[LANG_PYTHON2] = "python2.7 -c import py_compile; py_compile.compile(r'Main.py')";
     compile_cmd[LANG_PYTHON3] = "python3.7 -c import py_compile; py_compile.compile(r'Main.py')";
-    compile_cmd[LANG_GO] = "go build -o Main Main.go";
-    compile_cmd[LANG_SBCL] = "echo Hello";
+    sprintf(compile_cmd[LANG_GO], "%s build -o Main Main.go", env->GO);
+    sprintf(compile_cmd[LANG_SCHEME], "echo hello > /dev/null");
+    compile_cmd[LANG_SBCL] = "echo hello > /dev/null";
     compile_cmd[LANG_CLANG] = "clang Main.c -o Main -ferror-limit=10 -fno-asm -Wall -lm --static -std=c99 -DONLINE_JUDGE";
     compile_cmd[LANG_CLANG_XX] = "clang++ Main.cc -o Main -ferror-limit=10 -fno-asm -Wall -lm --static -std=c++0x -DONLINE_JUDGE";
     compile_cmd[LANG_FREE_BASIC] = "fbc -lang qb Main.bas";
-    compile_cmd[LANG_C_SHARP] = "gmcs -warn:0 Main.cs";
-    compile_cmd[LANG_LUA] = "luac -o Main Main.lua";
-    compile_cmd[LANG_JAVASCRIPT] = "node -c Main.js";
+    sprintf(compile_cmd[LANG_C_SHARP], "%s -warn:0 Main.cs", env->MCS);
+    sprintf(compile_cmd[LANG_LUA], "%s -o Main Main.lua", env->LUAC);
+    sprintf(compile_cmd[LANG_JAVASCRIPT], "%s -c Main.js", env->NODE);
     compile_cmd[LANG_OBJC] = "gcc -o Main Main.m -fconstant-string-class=NSConstantString -I /usr/include/GNUstep/ -L /usr/lib/GNUstep/Libraries/ -lobjc -lgnustep-base";
-    compile_cmd[LANG_PHP] = "php -l Main.php";
-    compile_cmd[LANG_PERL] = "perl -c Main.pl";
+    sprintf(compile_cmd[LANG_PHP], "%s -l Main.php", env->PHP);
+    sprintf(compile_cmd[LANG_PERL], "%s -c Main.pl", env->PERL);
 
     int pid = fork();
     if (pid == 0) {

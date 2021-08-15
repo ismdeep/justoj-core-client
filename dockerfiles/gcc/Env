@@ -1,0 +1,16 @@
+PYTHON2=/usr/local/python2/bin/python2.7
+PYTHON3=/usr/local/python3/bin/python3.7
+GUILE=/usr/bin/guile
+SBCL=/usr/bin/sbcl
+JAVA=/usr/bin/java
+JAVAC=/usr/bin/javac
+NODE=/opt/node/bin/node
+GO=/opt/go/bin/go
+PHP=/usr/bin/php
+PERL=/usr/bin/perl
+LUA=/usr/bin/lua
+LUAC=/usr/bin/luac
+FPC=/usr/bin/fpc
+RUBY=/usr/bin/ruby
+MCS=/usr/bin/mcs
+MONO=/usr/bin/mono
