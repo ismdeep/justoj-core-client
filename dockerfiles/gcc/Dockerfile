@@ -6,6 +6,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ADD dockerfiles/gcc/install-tools.sh /
 ADD dockerfiles/gcc/Env /
 RUN bash /install-tools.sh
+RUN mkdir /src
+ADD . /src
+RUN mkdir -p /justoj-bin && cd /justoj-bin && cmake /src && make
 RUN mkdir -p /var/run/sshd /var/log/supervisor
 RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 COPY authorized_keys /root/.ssh/authorized_keys
