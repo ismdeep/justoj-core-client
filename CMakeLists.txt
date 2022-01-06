@@ -41,7 +41,6 @@ message(STATUS "Git version is ${BRANCH_NAME}:${RELEASE_DATE}:${COMMIT_HASH}")
 
 set(CMAKE_C_STANDARD 11)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
